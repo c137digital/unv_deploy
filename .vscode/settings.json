@@ -1,0 +1,29 @@
+{
+    "python.pythonPath": "venv/bin/python",
+    "python.unitTest.pyTestEnabled": true,
+    "python.unitTest.nosetestsEnabled": false,
+    "python.unitTest.unittestEnabled": false,
+    "python.linting.enabled": true,
+    "python.linting.prospectorEnabled": true,
+    "python.formatting.provider": "autopep8",
+    "gitlens.currentLine.scrollable": false,
+    "editor.renderWhitespace": "all",
+    "editor.rulers": [80],
+    "files.exclude":{
+        "**/.git": true,
+        "**/.DS_Store": true,
+        "**/__pycache__": true,
+        "venv": true,
+        "**/.pytest_cache": true,
+        ".coverage": true,
+        "cov.xml": true,
+    },
+    "files.watcherExclude": {
+        "**/.git/**": true,
+        "**/node_modules/*/**": true,
+        "**/venv/**": true
+    },
+    "files.insertFinalNewline": true,
+    "git.ignoreLimitWarning": true,
+    "restructuredtext.confPath": "${workspaceFolder}/docs/source"
+}

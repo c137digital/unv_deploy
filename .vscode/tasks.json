@@ -1,0 +1,30 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Python: Build",
+            "type": "shell",
+            "command": ". activate.sh && python setup.py sdist bdist_wheel"
+        },
+        {
+            "label": "Python: Upload to testing PyPI",
+            "type": "shell",
+            "command": ". activate.sh && twine upload --repository-url https://test.pypi.org/legacy/ dist/* -u mortyspace"
+        },
+        {
+            "label": "Python: Release package on PyPI",
+            "type": "shell",
+            "command": ". activate.sh && twine upload dist/* -u mortyspace"
+        },
+        {
+            "label": "Prospector: Inspect",
+            "type": "shell",
+            "command": ". activate.sh && prospector .",
+        },
+        {
+            "label": "Coverage: Make coverage",
+            "type": "shell",
+            "command": ". activate.sh && pytest --cov . --cov-report xml:cov.xml"
+        }
+    ]
+}
