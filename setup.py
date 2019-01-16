@@ -26,6 +26,7 @@ setup(
     package_dir={'': 'src'},
     packages=find_packages('src'),
     install_requires=[
+        'Fabric3==1.14.post1',
     ],
     zip_safe=True
 )

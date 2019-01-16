@@ -10,7 +10,6 @@ install:
 script:
   - py.test --cov . --cov-report xml:coverage.xml
 
-# codeclimate coverage => change id to yours
 env:
   global:
     - CC_TEST_REPORTER_ID=
