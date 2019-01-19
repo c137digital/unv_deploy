@@ -1,14 +1,6 @@
-import importlib
 import functools
 
 from fabric.api import execute, run, env
-
-
-def load(module_path: str):
-    """Load deploy environment from module."""
-    module = importlib.import_module(module_path)
-    components, hosts = module.COMPONENTS, module.HOSTS
-    raise NotImplementedError(components, hosts)
 
 
 def as_user(user, func):
@@ -44,3 +36,10 @@ def filter_hosts(hosts, component, parent_key=''):
             yield key, value
         else:
             yield from filter_hosts(value, component, key)
+
+
+def get_host_components():
+    for host_ in ENV.HOSTS.values():
+        host_string = '{}:{}'.format(host_['public'], host_.get('ssh', 22))
+        if ENV.host_string == host_string:
+            return host_['components']
