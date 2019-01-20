@@ -1,10 +1,25 @@
 import os
 import pwd
+import pathlib
 import functools
 
-from fabric.api import execute, run, env, task, runs_once
+from fabric.api import execute, run, env, task, runs_once, cd as base_cd
 
 local_task = runs_once(task)()
+
+
+def cd(path: pathlib.Path):
+    return base_cd(str(path))
+
+
+def rmrf(path: pathlib.Path):
+    run(f'rm -rf {path}')
+
+
+def mkdir(path: pathlib.Path, remove_exist=False):
+    if remove_exist:
+        rmrf(path)
+    run(f'mkdir -p {path}')
 
 
 def get_local_username():
