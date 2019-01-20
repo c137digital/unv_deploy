@@ -3,7 +3,7 @@ import pathlib
 
 from fabric.api import env, task
 
-from ..helpers.remote import filter_hosts
+from ..helpers.core import filter_hosts
 
 
 @task

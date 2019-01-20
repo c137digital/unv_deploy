@@ -1,6 +1,14 @@
+import os
+import pwd
 import functools
 
-from fabric.api import execute, run, env
+from fabric.api import execute, run, env, task, runs_once
+
+local_task = runs_once(task)()
+
+
+def get_local_username():
+    return pwd.getpwuid(os.getuid())[0]
 
 
 def as_user(user, func):
@@ -39,7 +47,13 @@ def filter_hosts(hosts, component, parent_key=''):
 
 
 def get_host_components():
-    for host_ in ENV.HOSTS.values():
+    for host_ in env.HOSTS.values():
         host_string = '{}:{}'.format(host_['public'], host_.get('ssh', 22))
-        if ENV.host_string == host_string:
+        if env.host_string == host_string:
             return host_['components']
+
+
+def apt_install(*packages):
+    sudo('apt-get update && apt-get upgrade -y')
+    sudo('apt-get install -y --no-install-recommends '
+         '--no-install-suggests {}'.format(' '.join(packages)))
