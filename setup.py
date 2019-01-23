@@ -26,6 +26,7 @@ setup(
     package_dir={'': 'src'},
     packages=find_packages('src'),
     install_requires=[
+        'unv.app==0.1.2',
         'Fabric3==1.14.post1',
     ],
     zip_safe=True

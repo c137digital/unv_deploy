@@ -1,11 +1,11 @@
 from pathlib import Path
 
-from .core import apt_install, mkdir, rmrf, run, cd
+from ..helpers import apt_install, mkdir, rmrf, run, cd
 
 
-def build_python(
-        root_dir: Path,
-        version='3.7.2', fast_build=True, build_dir=Path('/tmp/python')):
+def build(
+        root_dir: Path, version='3.7.2', fast_build=True,
+        build_dir=Path('/tmp/python')):
     apt_install(
         'make', 'build-essential', 'libssl-dev', 'zlib1g-dev',
         'libbz2-dev', 'libreadline-dev', 'libsqlite3-dev', 'wget', 'curl',
@@ -38,3 +38,8 @@ def build_python(
         run('./pip3 install wheel')
         run('./pip3 install -U pip')
         run('./pip3 install -U setuptools')
+
+
+# TODO: add build scripts for
+def shell():
+    pass
