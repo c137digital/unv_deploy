@@ -29,16 +29,20 @@ def get_local_username() -> str:
     return pwd.getpwuid(os.getuid())[0]
 
 
-def as_user(user, func):
+def as_user(user, func=None):
     """Task will run from any user, sets to env.user."""
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        old_user = env.user
-        env.user = user
-        result = func(*args, **kwargs)
-        env.user = old_user
-        return result
-    return wrapper
+
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            old_user = env.user
+            env.user = user
+            result = func(*args, **kwargs)
+            env.user = old_user
+            return result
+        return wrapper
+
+    return decorator if func is None else decorator(func)
 
 
 def sudo(command: str):
