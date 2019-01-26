@@ -3,8 +3,9 @@ import pwd
 import pathlib
 import functools
 
-from fabric.api import (
-    execute, run, env, task, runs_once, cd as base_cd, quiet
+from fabric.api import (  # noqa
+    execute, run, env, task, runs_once,
+    cd as base_cd, quiet, local, put as base_put
 )
 from fabric.contrib import files, project
 
@@ -13,6 +14,10 @@ local_task = runs_once(task)()
 
 def cd(path: pathlib.Path):
     return base_cd(str(path))
+
+
+def put(local_path: pathlib.Path, remote_path: pathlib.Path):
+    return base_put(str(local_path), str(remote_path))
 
 
 def rmrf(path: pathlib.Path):
@@ -122,4 +127,16 @@ def sync_dir(
     project.rsync_project(
         str(remote_dir), local_dir=f'{local_dir}/', exclude=exclude,
         delete=True
+    )
+
+
+def upload_template(
+        from_file: pathlib.Path, to_dir: pathlib.Path, context: dict = None,
+        name: str = ''):
+    render_context = {'env': env}
+    render_context.update(context or {})
+    files.upload_template(
+        name or from_file.name, str(to_dir / from_file.name),
+        template_dir=str(from_file.parent),
+        context=render_context, use_jinja=True
     )

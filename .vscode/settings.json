@@ -4,6 +4,7 @@
     "python.unitTest.nosetestsEnabled": false,
     "python.unitTest.unittestEnabled": false,
     "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
     "python.linting.prospectorEnabled": true,
     "python.formatting.provider": "autopep8",
     "gitlens.currentLine.scrollable": false,
