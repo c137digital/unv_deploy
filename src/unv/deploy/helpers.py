@@ -9,6 +9,9 @@ from fabric.api import (  # noqa
 )
 from fabric.contrib import files, project
 
+from app.settings import SETTINGS as APP_SETTINGS
+
+
 local_task = runs_once(task)()
 
 
@@ -131,12 +134,15 @@ def sync_dir(
 
 
 def upload_template(
-        from_file: pathlib.Path, to_dir: pathlib.Path, context: dict = None,
-        name: str = ''):
-    render_context = {'env': env}
+        local_path: pathlib.Path, remote_path: pathlib.Path,
+        context: dict = None):
+    render_context = {
+        'env': env, 'SETTINGS': APP_SETTINGS,
+        'DEPLOY': env.DEPLOY
+    }
     render_context.update(context or {})
     files.upload_template(
-        name or from_file.name, str(to_dir / from_file.name),
-        template_dir=str(from_file.parent),
+        local_path.name, str(remote_path / local_path.name),
+        template_dir=str(local_path.parent),
         context=render_context, use_jinja=True
     )
