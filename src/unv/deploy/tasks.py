@@ -11,7 +11,6 @@ def hosts(component: str, host: str = ''):
         'private': '~/.ssh/id_rsa',
         'public': '~/.ssh/id_rsa.pub'
     })
-
     env.key_filename = keys['private']
     env.hosts = [
         '{}:{}'.format(host_['public'], host_.get('ssh', 22))

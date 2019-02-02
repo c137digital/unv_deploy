@@ -1,24 +1,14 @@
-from contextlib import contextmanager
 from pathlib import Path
 
 from .helpers import apt_install, mkdir, rmrf, run, cd
 
 
-class SettingsContextManager:
-    def __init__(self):
-        self.settings = None
-        self._old_settings = None
-
-    @contextmanager
-    def use(self, settings):
-        self._old_settings = self.settings
+class Package:
+    def __init__(self, settings):
         self.settings = settings
-        yield self
-        self.settings = self._old_settings
-        self._old_settings = None
 
 
-class PythonSettings(SettingsContextManager):
+class PythonPackage(Package):
     @property
     def _root(self):
         return Path(self.settings['root'])
@@ -69,4 +59,6 @@ class PythonSettings(SettingsContextManager):
         self.pip('install -U setuptools')
 
 
-python = PythonSettings()
+class NginxPackage(Package):
+    def build(self):
+        run("echo 'building")
