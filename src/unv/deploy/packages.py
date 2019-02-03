@@ -1,6 +1,8 @@
 from pathlib import Path
 
-from .helpers import apt_install, mkdir, rmrf, run, cd
+from .helpers import (
+    apt_install, mkdir, rmrf, run, cd, download_and_unpack, sudo
+)
 
 
 class Package:
@@ -37,10 +39,10 @@ class PythonPackage(Package):
         mkdir(self._root, remove_exist=True)
 
         with cd(build_dir):
-            run(f'wget https://www.python.org/ftp/'
-                f'python/{version}/Python-{version}.tar.xz')
-            run(f'tar xf Python-{version}.tar.xz')
-            run(f'mv ./Python-{version}/* ./')
+            url = 'https://www.python.org/ftp/' \
+                f'python/{version}/Python-{version}.tar.xz'
+            download_and_unpack(url, Path('./'))
+
             run(
                 './configure --prefix={0} '
                 '--enable-loadable-sqlite-extensions --enable-shared '
@@ -61,4 +63,34 @@ class PythonPackage(Package):
 
 class NginxPackage(Package):
     def build(self):
-        run("echo 'building")
+        # NOTE: some of boosted flags
+        # https://www.nginx.com/blog/thread-pools-boost-performance-9x/
+        #  --with-threads
+        # http://nginx.org/en/docs/http/ngx_http_core_module.html#aio
+        #  --with-file-aio
+
+        packages = {
+            'nginx': 'http://nginx.org/download/nginx-1.15.4.tar.gz',
+            'pcre': 'https://ftp.pcre.org/pub/pcre/pcre-8.42.tar.gz',
+            'zlib': 'http://www.zlib.net/zlib-1.2.11.tar.gz',
+            'openssl': 'https://www.openssl.org/source/openssl-1.1.0i.tar.gz'
+        }
+        for package, url in packages.items():
+            download_and_unpack(url, Path('.', package))
+
+        sudo('apt-get update && apt-get upgrade -y')
+        sudo('apt-get build-dep -y --no-install-recommends '
+             '--no-install-suggests nginx')
+
+        with cd('nginx'):
+            run("./configure --prefix={nginx_dir} "
+                "--user='{user}' --group='{user}' --with-pcre=../pcre "
+                "--with-pcre-jit --with-zlib=../zlib "
+                "--with-openssl=../openssl --with-http_ssl_module "
+                "--with-http_v2_module --with-threads "
+                "--with-file-aio".format(
+                    nginx_dir='app',
+                    user='nginx'
+                ))
+            run('make')
+            run('make install')

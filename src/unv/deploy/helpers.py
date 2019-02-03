@@ -146,3 +146,12 @@ def upload_template(
         template_dir=str(local_path.parent),
         context=render_context, use_jinja=True
     )
+
+
+def download_and_unpack(url: str, dest_dir: pathlib.Path):
+    run(f'wget {url}')
+    archive = url.split('/')[-1]
+    run(f'tar xf {archive}')
+    archive = archive.split('.tar')[0]
+    mkdir(dest_dir, remove_exist=True)
+    run(f'mv {archive}/* {dest_dir}')
