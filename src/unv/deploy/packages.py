@@ -63,17 +63,16 @@ class PythonPackage(Package):
 
 class NginxPackage(Package):
     def build(self):
-        # NOTE: some of boosted flags
         # https://www.nginx.com/blog/thread-pools-boost-performance-9x/
         #  --with-threads
         # http://nginx.org/en/docs/http/ngx_http_core_module.html#aio
         #  --with-file-aio
 
         packages = {
-            'nginx': 'http://nginx.org/download/nginx-1.15.4.tar.gz',
+            'nginx': 'http://nginx.org/download/nginx-1.15.8.tar.gz',
             'pcre': 'https://ftp.pcre.org/pub/pcre/pcre-8.42.tar.gz',
             'zlib': 'http://www.zlib.net/zlib-1.2.11.tar.gz',
-            'openssl': 'https://www.openssl.org/source/openssl-1.1.0i.tar.gz'
+            'openssl': 'https://www.openssl.org/source/openssl-1.1.1a.tar.gz'
         }
         for package, url in packages.items():
             download_and_unpack(url, Path('.', package))
@@ -89,8 +88,8 @@ class NginxPackage(Package):
                 "--with-openssl=../openssl --with-http_ssl_module "
                 "--with-http_v2_module --with-threads "
                 "--with-file-aio".format(
-                    nginx_dir='app',
-                    user='nginx'
+                    nginx_dir=self.settings.get('dir', 'app'),
+                    user=self.settings['user']
                 ))
             run('make')
             run('make install')
