@@ -9,7 +9,7 @@ from fabric.api import (  # noqa
 )
 from fabric.contrib import files, project
 
-from app.settings import SETTINGS as APP_SETTINGS
+from app.settings import SETTINGS
 
 
 local_task = runs_once(task)()
@@ -27,8 +27,8 @@ def rmrf(path: pathlib.Path):
     run(f'rm -rf {path}')
 
 
-def mkdir(path: pathlib.Path, remove_exist=False):
-    if remove_exist:
+def mkdir(path: pathlib.Path, remove_existing=False):
+    if remove_existing:
         rmrf(path)
     run(f'mkdir -p {path}')
 
@@ -112,7 +112,7 @@ def copy_ssh_key_for_user(username: str, public_key_path: pathlib.Path):
     keys_path = pathlib.Path(
         '/', 'home' if username != 'root' else '', username, '.ssh')
 
-    mkdir(keys_path, remove_exist=True)
+    mkdir(keys_path, remove_existing=True)
     run(f'chown -hR {username} {keys_path}')
 
     files.append(
@@ -136,13 +136,11 @@ def sync_dir(
 def upload_template(
         local_path: pathlib.Path, remote_path: pathlib.Path,
         context: dict = None):
-    render_context = {
-        'env': env, 'SETTINGS': APP_SETTINGS,
-        'DEPLOY': env.DEPLOY
-    }
+    render_context = {'SETTINGS': SETTINGS, 'DEPLOY': SETTINGS['deploy']}
     render_context.update(context or {})
+
     files.upload_template(
-        local_path.name, str(remote_path / local_path.name),
+        local_path.name, str(remote_path),
         template_dir=str(local_path.parent),
         context=render_context, use_jinja=True
     )
@@ -153,5 +151,5 @@ def download_and_unpack(url: str, dest_dir: pathlib.Path):
     archive = url.split('/')[-1]
     run(f'tar xf {archive}')
     archive = archive.split('.tar')[0]
-    mkdir(dest_dir, remove_exist=True)
+    mkdir(dest_dir, remove_existing=True)
     run(f'mv {archive}/* {dest_dir}')
