@@ -22,6 +22,10 @@ class Package:
     def user(self):
         return self.settings['user']
 
+    @property
+    def home(self):
+        return Path('/', 'home', self.user)
+
     def upload_template(
             self, local_path: Path, remote_path: Path, context: dict = None):
         context = context or {}
@@ -109,10 +113,6 @@ class NginxPackage(Package):
     }
 
     @property
-    def home(self):
-        return Path('/', 'home', self.settings['user'])
-
-    @property
     def root(self):
         return self.home / self.settings['dir']
 
@@ -182,3 +182,6 @@ class NginxPackage(Package):
 
     def status(self):
         sudo('systemctl status nginx')
+
+    def restart(self):
+        sudo('systemctl restart nginx')
