@@ -49,6 +49,25 @@ class Package:
             if service['boot']:
                 sudo(f'systemctl enable {service["name"]}')
 
+    def systemctl(self, command):
+        for service in self.settings['systemd']['services']:
+            if 'manage' in service and not service['manage']:
+                continue
+
+            sudo(f'systemctl {command} {service["name"]}')
+
+    def start(self):
+        self.systemctl('start')
+
+    def stop(self):
+        self.systemctl('stop')
+
+    def restart(self):
+        self.systemctl('restart')
+
+    def status(self):
+        self.systemctl('status')
+
 
 class PythonPackage(Package):
     @property
@@ -176,12 +195,3 @@ class NginxPackage(Package):
             )
 
         self.setup_systemd_units()
-
-    def start(self):
-        sudo('systemctl start nginx')
-
-    def status(self):
-        sudo('systemctl status nginx')
-
-    def restart(self):
-        sudo('systemctl restart nginx')
