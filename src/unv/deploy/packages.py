@@ -6,8 +6,10 @@ from unv.utils.collections import update_dict_recur
 
 from .helpers import (
     apt_install, mkdir, rmrf, run, cd, download_and_unpack, sudo,
-    upload_template
+    upload_template, filter_hosts
 )
+
+from app.settings import SETTINGS
 
 
 class Package:
@@ -135,6 +137,17 @@ class NginxPackage(Package):
     def root(self):
         return self.home / self.settings['dir']
 
+    @staticmethod
+    def get_app_hosts():
+        deploy = SETTINGS['deploy']
+        app = deploy['components']['app']
+
+        for _, host in filter_hosts(deploy['hosts'], 'app'):
+            for instance in range(app['instances']):
+                yield '{}:{}'.format(
+                    host['private'], SETTINGS['web']['port'] + instance
+                )
+
     def build(self):
         # https://www.nginx.com/blog/thread-pools-boost-performance-9x/
         #  --with-threads
@@ -191,7 +204,7 @@ class NginxPackage(Package):
         for local_path, remote_name in self.settings['include'].items():
             self.upload_template(
                 Path(local_path),
-                self.root / 'conf' / 'apps' / remote_name
+                self.root / 'conf' / 'apps' / remote_name,
             )
 
         self.setup_systemd_units()
