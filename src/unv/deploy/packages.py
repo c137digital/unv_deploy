@@ -72,9 +72,18 @@ class Package:
 
 
 class PythonPackage(Package):
+    DEFAULT = {
+        'root': 'python',
+        'version': '3.7.2',
+        'build': {
+            'fast': True,
+            'dir': '/tmp/python'
+        }
+    }
+
     @property
     def _root(self):
-        return Path(self.settings['root'])
+        return self.home / self.settings['root']
 
     def pip(self, command: str):
         root = self._root / 'bin'
@@ -85,9 +94,9 @@ class PythonPackage(Package):
         run(f'{root}/python3 {command}')
 
     def build(self):
-        version = self.settings.get('version', '3.7.2')
-        fast_build = self.settings.get('fast_build', True)
-        build_dir = Path(self.settings.get('build_dir', '/tmp/python'))
+        version = self.settings['version']
+        fast_build = self.settings['build']['fast']
+        build_dir = Path(self.settings['build']['dir'])
 
         apt_install(
             'make', 'build-essential', 'libssl-dev', 'zlib1g-dev',
