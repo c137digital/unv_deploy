@@ -6,7 +6,7 @@ from unv.utils.collections import update_dict_recur
 
 from .helpers import (
     apt_install, mkdir, rmrf, run, cd, download_and_unpack, sudo,
-    upload_template, filter_hosts
+    upload_template, filter_hosts, local, copy_ssh_key_for_user
 )
 
 from app.settings import SETTINGS
@@ -217,3 +217,21 @@ class NginxPackage(Package):
             )
 
         self.setup_systemd_units()
+
+
+class VagrantPackage(Package):
+    def setup(self):
+        local('vagrant destroy -f')
+        local('vagrant up')
+
+        # verify server so no timeout on next connection
+        local('vagrant ssh -c "sleep 0.1"')
+
+        copy_ssh_key_for_user('root', Path(self.settings['keys']['public']))
+
+    def start(self):
+        local('vagrant up')
+
+    @property
+    def running(self):
+        pass
