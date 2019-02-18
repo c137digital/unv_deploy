@@ -34,11 +34,21 @@ class Package:
         context['COMPONENT'] = self
         upload_template(self.package_root / local_path, remote_path, context)
 
+    def yield_systemd_services(self):
+        systemd = self.settings['systemd']
+        instances = self.settings.get('instances', 1)
+        for service in systemd['services']:
+            service = service.copy()
+            for instance in range(1, instances + 1):
+                service['name'] = service['name'].format(INSTANCE=instance)
+                yield service
+
     def setup_systemd_units(self):
+        services = list(self.yield_systemd_services())
         systemd = self.settings['systemd']
         mkdir(systemd['dir'], remove_existing=True)
 
-        for service in systemd['services']:
+        for service in services:
             service_remote_path = Path(
                 self.home, systemd['dir'], service['name'])
             self.upload_template(
@@ -47,12 +57,12 @@ class Package:
 
         sudo('systemctl daemon-reload')
 
-        for service in systemd['services']:
+        for service in services:
             if service['boot']:
                 sudo(f'systemctl enable {service["name"]}')
 
     def systemctl(self, command):
-        for service in self.settings['systemd']['services']:
+        for service in self.yield_systemd_services():
             if 'manage' in service and not service['manage']:
                 continue
 
