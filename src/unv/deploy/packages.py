@@ -149,15 +149,25 @@ class NginxPackage(Package):
             'pcre': '8.42',
             'zlib': '1.2.11',
             'openssl': '1.1.1a'
-        }
+        },
+        'connections': 1000,
+        'workers': 1
     }
 
     @property
     def root(self):
         return self.home / self.settings['dir']
 
+    @property
+    def workers(self):
+        return self.settings['workers']
+
+    @property
+    def connections(self):
+        return self.settings['connections']
+
     @staticmethod
-    def get_app_hosts():
+    def get_upstream_hosts():
         deploy = SETTINGS['deploy']
         app = deploy['components']['app']
 
