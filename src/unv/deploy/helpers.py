@@ -151,5 +151,5 @@ def download_and_unpack(url: str, dest_dir: pathlib.Path):
     archive = url.split('/')[-1]
     run(f'tar xf {archive}')
     archive = archive.split('.tar')[0]
-    mkdir(dest_dir, remove_existing=True)
+    mkdir(dest_dir)
     run(f'mv {archive}/* {dest_dir}')
