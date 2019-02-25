@@ -122,16 +122,11 @@ class PythonPackage(Package):
             url = 'https://www.python.org/ftp/' \
                 f'python/{version}/Python-{version}.tar.xz'
             download_and_unpack(url, Path('./'))
-            download_and_unpack(
-                'https://www.openssl.org/source/openssl-1.1.1a.tar.gz',
-                'openssl'
-            )
 
             run(
                 './configure --prefix={0} '
                 '--enable-loadable-sqlite-extensions --enable-shared '
                 '--with-system-expat --enable-optimizations '
-                '--with-openssl=./openssl '
                 'LDFLAGS="-L{0}/extlib/lib -Wl,--rpath={0}/lib '
                 '-Wl,--rpath={0}/extlib/lib" '
                 'CPPFLAGS="-I{0}/extlib/include"'.format(self._root)
@@ -141,6 +136,7 @@ class PythonPackage(Package):
             run('make install > /dev/null')
         rmrf(build_dir)
 
+        self.pip('install wheel')
         self.pip('install -U pip')
         self.pip('install -U setuptools')
 
