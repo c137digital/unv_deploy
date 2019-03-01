@@ -4,7 +4,7 @@ import pathlib
 import functools
 
 from fabric.api import (  # noqa
-    execute, run, env, task, runs_once,
+    execute, run, env, task, runs_once, quiet,
     cd as base_cd, quiet, local, put as base_put
 )
 from fabric.contrib import files, project

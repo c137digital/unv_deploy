@@ -6,7 +6,7 @@ from unv.utils.collections import update_dict_recur
 
 from .helpers import (
     apt_install, mkdir, rmrf, run, cd, download_and_unpack, sudo,
-    upload_template, filter_hosts, local, copy_ssh_key_for_user
+    upload_template, filter_hosts, local, copy_ssh_key_for_user, quiet
 )
 
 from app.settings import SETTINGS
@@ -37,10 +37,13 @@ class Package:
     def yield_systemd_services(self):
         systemd = self.settings['systemd']
         instances = self.settings.get('instances', 1)
-        for service in systemd['services']:
-            service = service.copy()
+
+        for original in systemd['services']:
+            template = original['name']
             for instance in range(1, instances + 1):
-                service['name'] = service['name'].format(INSTANCE=instance)
+                service = original.copy()
+                service['name'] = template.format(INSTANCE=instance)
+                service['instance'] = instance
                 yield service
 
     def setup_systemd_units(self):
@@ -52,8 +55,13 @@ class Package:
             service_remote_path = Path(
                 self.home, systemd['dir'], service['name'])
             self.upload_template(
-                Path(service['template']), service_remote_path)
-            sudo(f'ln -sf {service_remote_path} /etc/systemd/system/')
+                Path(service['template']), service_remote_path,
+                {'INSTANCE': service['instance']}
+            )
+
+            with quiet():
+                sudo(f"rm /etc/systemd/system/{service['name']}")
+            sudo(f"cp -f {service_remote_path} /etc/systemd/system/")
 
         sudo('systemctl daemon-reload')
 
