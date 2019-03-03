@@ -153,7 +153,7 @@ class NginxPackage(Package):
     DEFAULT = {
         'master': False,
         'versions': {
-            'nginx': '1.15.8',
+            'nginx': '1.15.9',
             'pcre': '8.42',
             'zlib': '1.2.11',
             'openssl': '1.1.1a'
