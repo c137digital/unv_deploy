@@ -6,7 +6,8 @@ from unv.utils.collections import update_dict_recur
 
 from .helpers import (
     apt_install, mkdir, rmrf, run, cd, download_and_unpack, sudo,
-    upload_template, filter_hosts, local, copy_ssh_key_for_user, quiet
+    upload_template, filter_hosts, local, copy_ssh_key_for_user, quiet,
+    update_local_known_hosts
 )
 
 from app.settings import SETTINGS
@@ -104,12 +105,13 @@ class PythonPackage(Package):
         return self.home / self.settings['root']
 
     def pip(self, command: str):
-        root = self._root / 'bin'
-        run(f'{root}/pip3 {command}')
+        self.bin(f'pip3 {command}')
 
     def run(self, command: str):
-        root = self._root / 'bin'
-        run(f'{root}/python3 {command}')
+        self.bin(f'python3 {command}')
+
+    def bin(self, command: str):
+        run(str(self._root / 'bin' / command))
 
     def build(self):
         version = self.settings['version']
@@ -252,8 +254,9 @@ class VagrantPackage(Package):
         local('vagrant destroy -f')
         local('vagrant up')
 
-        # verify server so no timeout on next connection
-        local('vagrant ssh -c "sleep 2"')
+        local('rm -f *.log')
+
+        update_local_known_hosts()
 
         copy_ssh_key_for_user('root', Path(self.settings['keys']['public']))
 

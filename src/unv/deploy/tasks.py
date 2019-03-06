@@ -17,3 +17,4 @@ def hosts(component: str, host: str = ''):
         for name, host_ in filter_hosts(SETTINGS['hosts'], component)
         if not host or name == host
     ]
+    env.connection_attempts = 10

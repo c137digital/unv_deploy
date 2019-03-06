@@ -37,6 +37,31 @@ def get_local_username() -> str:
     return pwd.getpwuid(os.getuid())[0]
 
 
+def get_local_homepath() -> pathlib.Path:
+    return pathlib.Path(os.path.expanduser('~'))
+
+
+def update_local_known_hosts():
+    ips = [
+        host['public']
+        for _, host in filter_hosts(SETTINGS['deploy']['hosts'])
+    ]
+
+    known_hosts = get_local_homepath() / '.ssh' / 'known_hosts'
+    if known_hosts.exists():
+        with known_hosts.open('r+') as f:
+            hosts = f.readlines()
+            f.seek(0)
+            for host in hosts:
+                if any(ip in host for ip in ips):
+                    continue
+                f.write(host)
+            f.truncate()
+
+    for ip in ips:
+        local('ssh-keyscan {ip} >> ~/.ssh/known_hosts')
+
+
 def as_user(user, func=None):
     """Task will run from any user, sets to env.user."""
 
@@ -63,7 +88,7 @@ def as_root(func):
     return as_user('root', func)
 
 
-def filter_hosts(hosts, component, parent_key=''):
+def filter_hosts(hosts, component='', parent_key=''):
     for key, value in hosts.items():
         if not isinstance(value, dict):
             continue
