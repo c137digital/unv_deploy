@@ -9,9 +9,6 @@ from fabric.api import (  # noqa
 )
 from fabric.contrib import files, project
 
-from app.settings import SETTINGS
-
-
 local_task = runs_once(task)()
 
 
@@ -44,7 +41,7 @@ def get_local_homepath() -> pathlib.Path:
 def update_local_known_hosts():
     ips = [
         host['public']
-        for _, host in filter_hosts(SETTINGS['deploy']['hosts'])
+        for _, host in filter_hosts(SETTINGS['hosts'])
     ]
 
     known_hosts = get_local_homepath() / '.ssh' / 'known_hosts'
@@ -161,13 +158,10 @@ def sync_dir(
 def upload_template(
         local_path: pathlib.Path, remote_path: pathlib.Path,
         context: dict = None):
-    render_context = {'SETTINGS': SETTINGS, 'DEPLOY': SETTINGS['deploy']}
-    render_context.update(context or {})
-
     files.upload_template(
         local_path.name, str(remote_path),
         template_dir=str(local_path.parent),
-        context=render_context, use_jinja=True
+        context=context or {}, use_jinja=True
     )
 
 
