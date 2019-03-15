@@ -9,8 +9,7 @@ from .helpers import (
     upload_template, filter_hosts, local, copy_ssh_key_for_user, quiet,
     update_local_known_hosts
 )
-
-from app.settings import SETTINGS
+from .settings import SETTINGS
 
 
 class Package:
@@ -110,8 +109,11 @@ class PythonPackage(Package):
     def run(self, command: str):
         self.bin(f'python3 {command}')
 
-    def bin(self, command: str):
-        run(str(self._root / 'bin' / command))
+    def bin(self, command: str, command_only=False):
+        command = str(self._root / 'bin' / command)
+        if command_only:
+            return command
+        return run(command)
 
     def build(self):
         version = self.settings['version']
@@ -178,13 +180,14 @@ class NginxPackage(Package):
 
     @staticmethod
     def get_upstream_hosts():
-        deploy = SETTINGS['deploy']
-        app = deploy['components']['app']
+        from unv.web.settings import SETTINGS as WEB_SETTINGS
 
-        for _, host in filter_hosts(deploy['hosts'], 'app'):
+        app = SETTINGS['components']['app']
+
+        for _, host in filter_hosts(SETTINGS['hosts'], 'app'):
             for instance in range(app['instances']):
                 yield '{}:{}'.format(
-                    host['private'], SETTINGS['web']['port'] + instance
+                    host['private'], WEB_SETTINGS['port'] + instance
                 )
 
     def build(self):
