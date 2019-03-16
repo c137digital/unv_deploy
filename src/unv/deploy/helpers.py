@@ -50,7 +50,7 @@ def update_local_known_hosts():
             f.truncate()
 
     for ip in ips:
-        local('ssh-keyscan {ip} >> ~/.ssh/known_hosts')
+        local(f'ssh-keyscan {ip} >> ~/.ssh/known_hosts')
 
 
 def as_user(user, func=None):
