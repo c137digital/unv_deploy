@@ -1,5 +1,3 @@
-import os
-import pwd
 import pathlib
 import functools
 
@@ -8,6 +6,8 @@ from fabric.api import (  # noqa
     cd as base_cd, quiet, local, put as base_put
 )
 from fabric.contrib import files, project
+
+from unv.utils.os import get_homepath
 
 from .settings import SETTINGS
 
@@ -32,21 +32,13 @@ def mkdir(path: pathlib.Path, remove_existing=False):
     run(f'mkdir -p {path}')
 
 
-def get_local_username() -> str:
-    return pwd.getpwuid(os.getuid())[0]
-
-
-def get_local_homepath() -> pathlib.Path:
-    return pathlib.Path(os.path.expanduser('~'))
-
-
 def update_local_known_hosts():
     ips = [
         host['public']
         for _, host in filter_hosts(SETTINGS['hosts'])
     ]
 
-    known_hosts = get_local_homepath() / '.ssh' / 'known_hosts'
+    known_hosts = get_homepath() / '.ssh' / 'known_hosts'
     if known_hosts.exists():
         with known_hosts.open('r+') as f:
             hosts = f.readlines()
