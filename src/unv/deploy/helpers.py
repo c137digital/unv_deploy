@@ -9,6 +9,8 @@ from fabric.api import (  # noqa
 )
 from fabric.contrib import files, project
 
+from .settings import SETTINGS
+
 local_task = runs_once(task)()
 
 
