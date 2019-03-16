@@ -38,12 +38,13 @@ class Package:
         systemd = self.settings['systemd']
         instances = self.settings.get('instances', 1)
 
-        for original in systemd['services']:
-            template = original['name']
+        for template, original in systemd['services'].items():
+            name = original['name']
             for instance in range(1, instances + 1):
                 service = original.copy()
-                service['name'] = template.format(INSTANCE=instance)
+                service['name'] = name.format(INSTANCE=instance)
                 service['instance'] = instance
+                service['template'] = template
                 yield service
 
     def setup_systemd_units(self):

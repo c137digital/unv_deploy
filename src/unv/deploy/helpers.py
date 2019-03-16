@@ -143,6 +143,7 @@ def sync_dir(
     """Sync local files with remote host."""
     if force:
         rmrf(remote_dir)
+    update_local_known_hosts()
     project.rsync_project(
         str(remote_dir), local_dir=f'{local_dir}/', exclude=exclude,
         delete=True
