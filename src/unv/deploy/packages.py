@@ -3,6 +3,7 @@ import copy
 from pathlib import Path
 
 from unv.utils.collections import update_dict_recur
+from unv.web.settings import SETTINGS as WEB_SETTINGS
 
 from .helpers import (
     apt_install, mkdir, rmrf, run, cd, download_and_unpack, sudo,
@@ -179,10 +180,16 @@ class NginxPackage(Package):
     def connections(self):
         return self.settings['connections']
 
+    @property
+    def domain(self):
+        return WEB_SETTINGS['domain']
+
+    @property
+    def static(self):
+        return WEB_SETTINGS['static']
+
     @staticmethod
     def get_upstream_hosts():
-        from unv.web.settings import SETTINGS as WEB_SETTINGS
-
         app = SETTINGS['components']['app']
 
         for _, host in filter_hosts(SETTINGS['hosts'], 'app'):
