@@ -1,10 +1,15 @@
 import pathlib
 import functools
+import importlib
 
+from .settings import SETTINGS
+
+from fabric import state, main as fab_main
 from fabric.api import (  # noqa
     execute, run, env, task, runs_once, quiet,
     cd as base_cd, quiet, local, put as base_put
 )
+from fabric.task_utils import _Dict
 from fabric.contrib import files, project
 
 from unv.utils.os import get_homepath
@@ -167,3 +172,21 @@ def download_and_unpack(url: str, dest_dir: pathlib.Path):
     archive = archive.split('.tar')[0]
     mkdir(dest_dir)
     run(f'mv {archive}/* {dest_dir}')
+
+
+def load_components_tasks() -> None:
+    for component in SETTINGS['components']:
+        try:
+            tasks = importlib.import_module('{}.tasks'.format(component))
+            commands = state.commands
+            parts = getattr(tasks, 'NAMESPACE', component.split('.')[-1])
+            for part in parts.split('.'):
+                commands = commands.setdefault(part, _Dict())
+
+            _, new_style, classic, _ = fab_main.load_tasks_from_module(tasks)
+            tasks = new_style if state.env.new_style_tasks else classic
+
+            commands.update(tasks)
+            del tasks
+        except ImportError:
+            pass

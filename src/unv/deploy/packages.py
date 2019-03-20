@@ -265,11 +265,10 @@ class VagrantPackage(Package):
         local('vagrant destroy -f')
         local('vagrant up')
 
-        local('rm -f *.log')
-
         update_local_known_hosts()
 
-        copy_ssh_key_for_user('root', Path(self.settings['keys']['public']))
+        local('vagrant ssh -c "sleep 1"')
+        local('rm -f *.log')
 
     def start(self):
         local('vagrant up')

@@ -1,5 +1,7 @@
 from fabric.api import env, task
 
+from unv.utils.os import get_homepath
+
 from .helpers import filter_hosts
 from .settings import SETTINGS
 
@@ -8,8 +10,8 @@ from .settings import SETTINGS
 def hosts(component: str, host: str = ''):
     """Set env user and hosts from component settings."""
     keys = SETTINGS.get('keys', {
-        'private': '~/.ssh/id_rsa',
-        'public': '~/.ssh/id_rsa.pub'
+        'private': str(get_homepath() / '.ssh' / 'id_rsa'),
+        'public': str(get_homepath() / '.ssh' / 'id_rsa.pub')
     })
     env.key_filename = keys['private']
     env.hosts = [

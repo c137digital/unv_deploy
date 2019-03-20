@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='unv.deploy',
-    version='0.1.10',
+    version='0.1.11',
     description="""Deploy helpers for UNV framework""",
     url='http://github.com/c137digital/unv_deploy',
     author='Morty Space',
@@ -24,8 +24,8 @@ setup(
     package_dir={'': 'src'},
     packages=find_packages('src'),
     install_requires=[
-        'unv.app==0.2.3',
-        'Fabric3==1.14.post1',
+        'unv.app',
+        'fabric',
     ],
     zip_safe=True
 )
