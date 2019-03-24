@@ -2,57 +2,36 @@ import asyncio
 import contextlib
 
 from unv.utils.os import get_homepath
-from unv.utils.tasks import TasksBase
+from unv.utils.tasks import TasksBase, TasksManager
 
 from .helpers import filter_hosts
 from .settings import SETTINGS
 
 
-# @task
-# def hosts(component: str, host: str = ''):
-#     """Set env user and hosts from component settings."""
-#     keys = SETTINGS.get('keys', {
-#         'private': str(get_homepath() / '.ssh' / 'id_rsa'),
-#         'public': str(get_homepath() / '.ssh' / 'id_rsa.pub')
-#     })
-#     env.key_filename = keys['private']
-#     env.hosts = [
-#         '{}:{}'.format(host_['public'], host_.get('ssh', 22))
-#         for name, host_ in filter_hosts(SETTINGS['hosts'], component)
-#         if not host or name == host
-#     ]
-#     env.connection_attempts = 10
-
 class DeployTasksManager(TasksManager):
-     def run(self, command):
-        args = command.split()
-        namespace, command = args[0].split('.')
-        task = self.tasks[namespace].tasks[command]
+    def run_task(self, task_class, command, args):
+        method = getattr(task_class, command)
+        if getattr(method, '__parallel__'):
+            # task_class(user, host, port)
+            pass
+        return super().run_task(task_class, command, args)
 
-        task_args = []
-        if len(args) > 1:
-            task_args = args[1:]
+    # TODO: add select or load current hosts to process
+    # async def select(self, component: str, host: str = ''):
+    #     self.user = SETTINGS['components'][component]['user']
+    #     self.hosts = [
+    #         {'ip': host_['public'], 'port': host_.get('ssh', 22)}
+    #         for name, host_ in filter_hosts(component)
+    #         if not host or name == host
+    #     ]
 
-        if getattr(task, '__parallel__'):
-            task.host = '10.50.25.11'
-            task.user = '232'
-            asyncio.gather()
-
-        return asyncio.run(task(*task_args))
 
 
 class DeployTasksBase(TasksBase):
-    def __init__(self):
-        self.user = ''
-        self.hosts = [] 
-
-    async def select(self, component: str, host: str = ''):
-        self.user = SETTINGS['components'][component]['user']
-        self.hosts = [
-            {'ip': host_['public'], 'port': host_.get('ssh', 22)}
-            for name, host_ in filter_hosts(component)
-            if not host or name == host
-        ]
+    def __init__(self, user, host, port):
+        self._user = user
+        self._host = host
+        self._port = port
 
     async def run(self, command):
         command = f'{self.prefix} {command}'
