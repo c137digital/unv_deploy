@@ -8,24 +8,6 @@ from unv.utils.os import get_homepath
 from .settings import SETTINGS
 
 
-def cd(context, path: pathlib.Path):
-    pass
-
-
-def put(local_path: pathlib.Path, remote_path: pathlib.Path):
-    # return base_put(str(local_path), str(remote_path))
-    scp()
-
-def rmrf(path: pathlib.Path):
-    run(f'rm -rf {path}')
-
-
-def mkdir(path: pathlib.Path, remove_existing=False):
-    if remove_existing:
-        rmrf(path)
-    run(f'mkdir -p {path}')
-
-
 def update_local_known_hosts():
     ips = [
         host['public']
@@ -52,24 +34,18 @@ def as_user(user, func=None):
 
     def decorator(func):
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            old_user = env.user
-            env.user = user
-            result = func(*args, **kwargs)
-            env.user = old_user
+        async def wrapper(self, *args, **kwargs):
+            old_user = self.user
+            self.user = user
+            result = await func(self, *args, **kwargs)
+            self.user = old_user
             return result
         return wrapper
 
     return decorator if func is None else decorator(func)
 
 
-def sudo(command: str):
-    run_as_root = as_user('root', run)
-    execute(run_as_root, command)
-
-
 def as_root(func):
-    """Task will run from "root" user, sets to env.user."""
     return as_user('root', func)
 
 
@@ -99,20 +75,6 @@ def apt_install(*packages):
     sudo('apt-get update && apt-get upgrade -y')
     sudo('apt-get install -y --no-install-recommends '
          '--no-install-suggests {}'.format(' '.join(packages)))
-
-
-@as_root
-def create_user(username: str):
-    username = username
-
-    with quiet():
-        has_user = run("id -u {}".format(username)).succeeded
-
-    if not has_user:
-        run("adduser --quiet --disabled-password"
-            " --gecos \"{0}\" {0}".format(username))
-
-    return has_user
 
 
 @as_root
