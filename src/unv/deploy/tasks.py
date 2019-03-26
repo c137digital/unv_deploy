@@ -1,6 +1,10 @@
 import asyncio
-import pathlib
+import shutil
 import contextlib
+
+from pathlib import Path
+
+import jinja2
 
 from unv.utils.os import get_homepath
 from unv.utils.tasks import TasksBase, TasksManager, TaskSubprocessError
@@ -18,53 +22,110 @@ class DeployTasksBase(TasksBase):
     def __init__(self, storage, user, host, port=22):
         self.storage = storage
         self.user = user
+        self.original_user = user
         self.host = host
         self.port = port
         self.prefix = ''
+
+    @as_root
+    async def sudo(self, command, strip=True):
+        """Run command on server as root user."""
+        return await self.run(command, strip)
+
+    @as_root
+    async def create_user(self):
+        """Create user if not exist and sync ssh keys."""
+        try:
+            await self.run("id -u {}".format(self.original_user))
+        except TaskSubprocessError:
+            await self.run(
+                "adduser --quiet --disabled-password"
+                " --gecos \"{0}\" {0}".format(self.original_user)
+            )
+
+            local_ssh_public_key = Path('~/.ssh/id_rsa.pub')
+            local_ssh_public_key = local_ssh_public_key.expanduser()
+            keys_path = Path(
+                '/', 'home' if self.original_user != 'root' else '',
+                self.original_user, '.ssh'
+            )
+
+            await self.mkdir(keys_path)
+            await self.run(f'chown -hR {self.original_user} {keys_path}')
+            await self.run('echo "{}" >> {}'.format(
+                local_ssh_public_key.read_text().strip(),
+                keys_path / 'authorized_keys'
+            ))
+
+    @as_root
+    async def apt_install(self, *packages):
+        await self.run('DEBIAN_FRONTEND=noninteractive apt-get update -y -q && apt-get upgrade -y -q')
+        await self.run(
+            'DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends '
+            '--no-install-suggests {}'.format(' '.join(packages))
+        )
 
     async def run(self, command, strip=True) -> str:
         if self.prefix:
             command = f'{self.prefix} {command}'
         response = await self.subprocess(
-            f"ssh -p {self.port} {self.user}@{self.host} {command}"
+            f"ssh -p {self.port} {self.user}@{self.host} '{command}'"
         ) or ''
         if strip:
             response = response.strip()
         return response
 
-    async def rmrf(self, path: pathlib.Path):
+    async def rmrf(self, path: Path):
         await self.run(f'rm -rf {path}')
 
-    async def mkdir(self, path: pathlib.Path, remove_existing=False):
+    async def mkdir(self, path: Path, remove_existing=False):
         if remove_existing:
             await self.rmrf(path)
         await self.run(f'mkdir -p {path}')
 
-    async def sudo(self, command, strip=True):
-        old_user = self.user
-        response = await self.run(command, strip)
-        self.user = old_user
-        return response
+    async def upload(self, local_path: Path, remote_path: Path):
+        await self.subprocess(
+            f'scp -r -P {self.port} {local_path} '
+            f'{self.user}@{self.host}:{remote_path}')
 
-    @as_root
-    def create_user(self, username: str):
+    async def upload_template(
+            self, local_path: Path, remote_path: Path, context: dict = None):
+        render_path = Path(f'{local_path}.render')
+        template = jinja2.Template(local_path.read_text())
+        render_path.write_text(template.render(context))
         try:
-            await self.run("id -u {}".format(username))
-        except TaskSubprocessError:
-            await self.run(
-                "adduser --quiet --disabled-password"
-                " --gecos \"{0}\" {0}".format(username)
-            )
+            await self.upload(render_path, remote_path)
+        finally:
+            render_path.unlink()
 
-    # def put(local_path: pathlib.Path, remote_path: pathlib.Path):
-    #     await self.subprocess()
+    async def download_and_unpack(self, url: str, dest_dir: Path = Path('.')):
+        await self.run(f'wget -q {url}')
+        archive = url.split('/')[-1]
+        await self.run(f'tar xf {archive}')
+        archive_dir = archive.split('.tar')[0]
+
+        await self.mkdir(dest_dir)
+        await self.run(f'mv {archive_dir}/* {dest_dir}')
+
+        await self.rmrf(archive)
+        await self.rmrf(archive_dir)
 
     @contextlib.contextmanager
-    def cd(self, directory):
+    def cd(self, path: Path):
         old_prefix = self.prefix
-        self.prefix = f'{self.prefix} cd {directory} &&'
+        self.prefix = f'cd {path} && {self.prefix}'
         yield
         self.prefix = old_prefix
+
+    def get_components(self):
+        for host_ in SETTINGS['hosts'].values():
+            if self.host == host_['public']:
+                return host_['components']
+        return None
+
+
+class DeployComponentTasks(DeployTasksBase):
+    pass
 
 
 class DeployTasksManager(TasksManager):

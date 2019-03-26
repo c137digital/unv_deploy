@@ -7,16 +7,16 @@ SETTINGS = {
                     'private': '0.0.0.0',
                     'components': ['test']
                 },
-                '2': {
-                    'public': '10.50.25.10',
-                    'private': '0.0.0.0',
-                    'components': ['test']
-                },
+                # '2': {
+                #     'public': '10.50.25.10',
+                #     'private': '0.0.0.0',
+                #     'components': ['test']
+                # },
             }
         },
         'components': {
             'test': {
-                'user': 'vagrant'
+                'user': 'someuser5'
             }
         }
     }

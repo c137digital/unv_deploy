@@ -4,158 +4,156 @@ from pathlib import Path
 
 from unv.utils.collections import update_dict_recur
 from unv.web.settings import SETTINGS as WEB_SETTINGS
+from unv.utils.os import get_homepath
 
-from .helpers import (
-    apt_install, mkdir, rmrf, run, cd, download_and_unpack, sudo,
-    upload_template, filter_hosts, local, copy_ssh_key_for_user, quiet,
-    update_local_known_hosts
-)
+from .helpers import filter_hosts
+from .tasks import DeployTasksBase
 from .settings import SETTINGS
 
 
-class Package:
-    DEFAULT = {}
+# class Package:
+#     DEFAULT = {}
 
-    def __init__(self, root, settings):
-        self.package_root = Path(root).parent
-        self.settings = update_dict_recur(
-            copy.deepcopy(self.DEFAULT), settings)
+#     def __init__(self, root, settings):
+#         self.package_root = Path(root).parent
+#         self.settings = update_dict_recur(
+#             copy.deepcopy(self.DEFAULT), settings)
 
-    @property
-    def user(self):
-        return self.settings['user']
+#     @property
+#     def user(self):
+#         return self.settings['user']
 
-    @property
-    def home(self):
-        return Path('/', 'home', self.user)
+#     @property
+#     def home(self):
+#         return Path('/', 'home', self.user)
 
-    def upload_template(
-            self, local_path: Path, remote_path: Path, context: dict = None):
-        context = context or {}
-        context['COMPONENT'] = self
-        upload_template(self.package_root / local_path, remote_path, context)
+#     def upload_template(
+#             self, local_path: Path, remote_path: Path, context: dict = None):
+#         context = context or {}
+#         context['COMPONENT'] = self
+#         upload_template(self.package_root / local_path, remote_path, context)
 
-    def yield_systemd_services(self):
-        systemd = self.settings['systemd']
-        instances = self.settings.get('instances', 1)
+#     def yield_systemd_services(self):
+#         systemd = self.settings['systemd']
+#         instances = self.settings.get('instances', 1)
 
-        for template, original in systemd['services'].items():
-            name = original['name']
-            for instance in range(1, instances + 1):
-                service = original.copy()
-                service['name'] = name.format(INSTANCE=instance)
-                service['instance'] = instance
-                service['template'] = template
-                yield service
+#         for template, original in systemd['services'].items():
+#             name = original['name']
+#             for instance in range(1, instances + 1):
+#                 service = original.copy()
+#                 service['name'] = name.format(INSTANCE=instance)
+#                 service['instance'] = instance
+#                 service['template'] = template
+#                 yield service
 
-    def setup_systemd_units(self):
-        services = list(self.yield_systemd_services())
-        systemd = self.settings['systemd']
-        mkdir(systemd['dir'], remove_existing=True)
+#     def setup_systemd_units(self):
+#         services = list(self.yield_systemd_services())
+#         systemd = self.settings['systemd']
+#         mkdir(systemd['dir'], remove_existing=True)
 
-        for service in services:
-            service_remote_path = Path(
-                self.home, systemd['dir'], service['name'])
-            self.upload_template(
-                Path(service['template']), service_remote_path,
-                {'INSTANCE': service['instance']}
-            )
+#         for service in services:
+#             service_remote_path = Path(
+#                 self.home, systemd['dir'], service['name'])
+#             self.upload_template(
+#                 Path(service['template']), service_remote_path,
+#                 {'INSTANCE': service['instance']}
+#             )
 
-            with quiet():
-                sudo(f"rm /etc/systemd/system/{service['name']}")
-            sudo(f"cp -f {service_remote_path} /etc/systemd/system/")
+#             with quiet():
+#                 sudo(f"rm /etc/systemd/system/{service['name']}")
+#             sudo(f"cp -f {service_remote_path} /etc/systemd/system/")
 
-        sudo('systemctl daemon-reload')
+#         sudo('systemctl daemon-reload')
 
-        for service in services:
-            if service['boot']:
-                sudo(f'systemctl enable {service["name"]}')
+#         for service in services:
+#             if service['boot']:
+#                 sudo(f'systemctl enable {service["name"]}')
 
-    def systemctl(self, command):
-        for service in self.yield_systemd_services():
-            if 'manage' in service and not service['manage']:
-                continue
+#     def systemctl(self, command):
+#         for service in self.yield_systemd_services():
+#             if 'manage' in service and not service['manage']:
+#                 continue
 
-            sudo(f'systemctl {command} {service["name"]}')
+#             sudo(f'systemctl {command} {service["name"]}')
 
-    def start(self):
-        self.systemctl('start')
+#     def start(self):
+#         self.systemctl('start')
 
-    def stop(self):
-        self.systemctl('stop')
+#     def stop(self):
+#         self.systemctl('stop')
 
-    def restart(self):
-        self.systemctl('restart')
+#     def restart(self):
+#         self.systemctl('restart')
 
-    def status(self):
-        self.systemctl('status')
-
-
-class PythonPackage(Package):
-    DEFAULT = {
-        'root': 'python',
-        'version': '3.7.2',
-        'build': {
-            'fast': True,
-            'dir': '/tmp/python'
-        }
-    }
-
-    @property
-    def _root(self):
-        return self.home / self.settings['root']
-
-    def pip(self, command: str):
-        self.bin(f'pip3 {command}')
-
-    def run(self, command: str):
-        self.bin(f'python3 {command}')
-
-    def bin(self, command: str, command_only=False):
-        command = str(self._root / 'bin' / command)
-        if command_only:
-            return command
-        return run(command)
-
-    def build(self):
-        version = self.settings['version']
-        fast_build = self.settings['build']['fast']
-        build_dir = Path(self.settings['build']['dir'])
-
-        apt_install(
-            'make', 'build-essential', 'libssl-dev', 'zlib1g-dev',
-            'libbz2-dev', 'libreadline-dev', 'libsqlite3-dev', 'wget', 'curl',
-            'llvm', 'libncurses5-dev', 'libncursesw5-dev', 'xz-utils',
-            'tk-dev', 'tcl-dev', 'libffi-dev', 'wget'
-        )
-
-        mkdir(build_dir, remove_existing=True)
-        mkdir(self._root, remove_existing=True)
-
-        with cd(build_dir):
-            url = 'https://www.python.org/ftp/' \
-                f'python/{version}/Python-{version}.tar.xz'
-            download_and_unpack(url, Path('./'))
-
-            run(
-                './configure --prefix={0} '
-                '--enable-loadable-sqlite-extensions --enable-shared '
-                '--with-system-expat --enable-optimizations '
-                'LDFLAGS="-L{0}/extlib/lib -Wl,--rpath={0}/lib '
-                '-Wl,--rpath={0}/extlib/lib" '
-                'CPPFLAGS="-I{0}/extlib/include"'.format(self._root)
-            )
-            run('make -j$(nproc) {}'.format(
-                'build_all' if fast_build else 'build'))
-            run('make install > /dev/null')
-        rmrf(build_dir)
-
-        self.pip('install wheel')
-        self.pip('install -U pip')
-        self.pip('install -U setuptools')
+#     def status(self):
+#         self.systemctl('status')
 
 
-class NginxPackage(Package):
+# class PythonPackage(Package):
+#     DEFAULT = {
+#         'root': 'python',
+#         'version': '3.7.2',
+#         'build': {
+#             'fast': True,
+#             'dir': '/tmp/python'
+#         }
+#     }
+
+#     @property
+#     def _root(self):
+#         return self.home / self.settings['root']
+
+#     def pip(self, command: str):
+#         self.bin(f'pip3 {command}')
+
+#     def run(self, command: str):
+#         self.bin(f'python3 {command}')
+
+#     def bin(self, command: str, command_only=False):
+#         command = str(self._root / 'bin' / command)
+#         if command_only:
+#             return command
+#         return run(command)
+
+#     def build(self):
+#         version = self.settings['version']
+#         fast_build = self.settings['build']['fast']
+#         build_dir = Path(self.settings['build']['dir'])
+
+#         apt_install(
+#             'make', 'build-essential', 'libssl-dev', 'zlib1g-dev',
+#             'libbz2-dev', 'libreadline-dev', 'libsqlite3-dev', 'wget', 'curl',
+#             'llvm', 'libncurses5-dev', 'libncursesw5-dev', 'xz-utils',
+#             'tk-dev', 'tcl-dev', 'libffi-dev', 'wget'
+#         )
+
+#         mkdir(build_dir, remove_existing=True)
+#         mkdir(self._root, remove_existing=True)
+
+#         with cd(build_dir):
+#             url = 'https://www.python.org/ftp/' \
+#                 f'python/{version}/Python-{version}.tar.xz'
+#             download_and_unpack(url, Path('./'))
+
+#             run(
+#                 './configure --prefix={0} '
+#                 '--enable-loadable-sqlite-extensions --enable-shared '
+#                 '--with-system-expat --enable-optimizations '
+#                 'LDFLAGS="-L{0}/extlib/lib -Wl,--rpath={0}/lib '
+#                 '-Wl,--rpath={0}/extlib/lib" '
+#                 'CPPFLAGS="-I{0}/extlib/include"'.format(self._root)
+#             )
+#             run('make -j$(nproc) {}'.format(
+#                 'build_all' if fast_build else 'build'))
+#             run('make install > /dev/null')
+#         rmrf(build_dir)
+
+#         self.pip('install wheel')
+#         self.pip('install -U pip')
+#         self.pip('install -U setuptools')
+
+
+class NginxTasks(DeployTasksBase):
     DEFAULT = {
         'master': False,
         'versions': {
@@ -192,7 +190,7 @@ class NginxPackage(Package):
     def get_upstream_hosts():
         app = SETTINGS['components']['app']
 
-        for _, host in filter_hosts(SETTINGS['hosts'], 'app'):
+        for _, host in filter_hosts('app'):
             for instance in range(app['instances']):
                 yield '{}:{}'.format(
                     host['private'], WEB_SETTINGS['port'] + instance
@@ -260,19 +258,27 @@ class NginxPackage(Package):
         self.setup_systemd_units()
 
 
-class VagrantPackage(Package):
+class VagrantTasks(DeployTasksBase):
     def setup(self):
-        local('vagrant destroy -f')
-        local('vagrant up')
+        await self.subprocess('vagrant destroy -f')
+        await self.subprocess('vagrant up')
+        await self.update_local_known_hosts()
+        await self.subprocess('vagrant ssh -c "sleep 1"')
+        await self.subprocess('rm -f *.log')
 
-        update_local_known_hosts()
+    async def update_local_known_hosts(self):
+        ips = [host['public'] for _, host in filter_hosts()]
+        known_hosts = get_homepath() / '.ssh' / 'known_hosts'
 
-        local('vagrant ssh -c "sleep 1"')
-        local('rm -f *.log')
+        if known_hosts.exists():
+            with known_hosts.open('r+') as f:
+                hosts = f.readlines()
+                f.seek(0)
+                for host in hosts:
+                    if any(ip in host for ip in ips):
+                        continue
+                    f.write(host)
+                f.truncate()
 
-    def start(self):
-        local('vagrant up')
-
-    @property
-    def running(self):
-        pass
+        for ip in ips:
+            await self.subprocess(f'ssh-keyscan {ip} >> {known_hosts}')

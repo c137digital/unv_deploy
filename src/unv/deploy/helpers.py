@@ -1,32 +1,8 @@
-import asyncio
-import pathlib
 import functools
-import importlib
 
 from unv.utils.os import get_homepath
 
 from .settings import SETTINGS
-
-
-def update_local_known_hosts():
-    ips = [
-        host['public']
-        for _, host in filter_hosts(SETTINGS['hosts'])
-    ]
-
-    known_hosts = get_homepath() / '.ssh' / 'known_hosts'
-    if known_hosts.exists():
-        with known_hosts.open('r+') as f:
-            hosts = f.readlines()
-            f.seek(0)
-            for host in hosts:
-                if any(ip in host for ip in ips):
-                    continue
-                f.write(host)
-            f.truncate()
-
-    for ip in ips:
-        local(f'ssh-keyscan {ip} >> ~/.ssh/known_hosts')
 
 
 def as_user(user, func=None):
@@ -61,66 +37,3 @@ def filter_hosts(component='', parent_key='', hosts=None):
             yield key, value
         else:
             yield from filter_hosts(component, key, value)
-
-
-def get_host_components():
-    for host_ in SETTINGS['hosts'].values():
-        host_string = '{}:{}'.format(host_['public'], host_.get('ssh', 22))
-        if env.host_string == host_string:
-            return host_['components']
-    return None
-
-
-def apt_install(*packages):
-    sudo('apt-get update && apt-get upgrade -y')
-    sudo('apt-get install -y --no-install-recommends '
-         '--no-install-suggests {}'.format(' '.join(packages)))
-
-
-@as_root
-def copy_ssh_key_for_user(username: str, public_key_path: pathlib.Path):
-    username = username
-    local_ssh_public_key = public_key_path
-    local_ssh_public_key = local_ssh_public_key.expanduser()
-    keys_path = pathlib.Path(
-        '/', 'home' if username != 'root' else '', username, '.ssh')
-
-    mkdir(keys_path, remove_existing=True)
-    run(f'chown -hR {username} {keys_path}')
-
-    files.append(
-        (keys_path / 'authorized_keys').as_posix(),
-        local_ssh_public_key.read_text()
-    )
-
-
-def sync_dir(
-        local_dir: pathlib.Path, remote_dir: pathlib.Path,
-        exclude: list = None, force=False):
-    """Sync local files with remote host."""
-    if force:
-        rmrf(remote_dir)
-    update_local_known_hosts()
-    project.rsync_project(
-        str(remote_dir), local_dir=f'{local_dir}/', exclude=exclude,
-        delete=True
-    )
-
-
-def upload_template(
-        local_path: pathlib.Path, remote_path: pathlib.Path,
-        context: dict = None):
-    files.upload_template(
-        local_path.name, str(remote_path),
-        template_dir=str(local_path.parent),
-        context=context or {}, use_jinja=True
-    )
-
-
-def download_and_unpack(url: str, dest_dir: pathlib.Path):
-    run(f'wget {url}')
-    archive = url.split('/')[-1]
-    run(f'tar xf {archive}')
-    archive = archive.split('.tar')[0]
-    mkdir(dest_dir)
-    run(f'mv {archive}/* {dest_dir}')
