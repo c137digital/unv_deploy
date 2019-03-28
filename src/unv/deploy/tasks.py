@@ -84,7 +84,6 @@ class DeployTasksBase(TasksBase):
             )
 
     async def _run(self, command, strip=True) -> str:
-        print(self._host, 'run', self._current_prefix, command)
         response = await self._local(
             f"ssh -p {self._port} {self._user}@{self._host} "
             f"'{self._current_prefix}{command}'"
@@ -118,7 +117,6 @@ class DeployTasksBase(TasksBase):
             render_path.unlink()
 
     async def _download_and_unpack(self, url: str, dest_dir: Path = Path('.')):
-        print('download and unpack', url)
         await self._run(f'wget -q {url}')
         archive = url.split('/')[-1]
         await self._run(f'tar xf {archive}')
@@ -129,8 +127,6 @@ class DeployTasksBase(TasksBase):
 
         await self._rmrf(archive)
         await self._rmrf(archive_dir)
-
-        print(await self._run('ls'))
 
     # def get_components(self):
     #     for host_ in SETTINGS['hosts'].values():
