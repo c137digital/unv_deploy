@@ -1,7 +1,5 @@
 import functools
 
-from unv.utils.os import get_homepath
-
 from .settings import SETTINGS
 
 
@@ -11,10 +9,10 @@ def as_user(user, func=None):
     def decorator(func):
         @functools.wraps(func)
         async def wrapper(self, *args, **kwargs):
-            old_user = self.user
-            self.user = user
+            old_user = self._user
+            self._user = user
             result = await func(self, *args, **kwargs)
-            self.user = old_user
+            self._user = old_user
             return result
         return wrapper
 

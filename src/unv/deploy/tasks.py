@@ -7,7 +7,7 @@ from pathlib import Path
 import jinja2
 
 from unv.utils.os import get_homepath
-from unv.utils.tasks import TasksBase, TasksManager, TaskSubprocessError
+from unv.utils.tasks import TasksBase, TasksManager, TaskRunError
 
 from .helpers import filter_hosts, as_root
 from .settings import SETTINGS
@@ -19,109 +19,124 @@ def parallel(task):
 
 
 class DeployTasksBase(TasksBase):
-    def __init__(self, storage, user, host, port=22):
-        self.storage = storage
-        self.user = user
-        self.original_user = user
-        self.host = host
-        self.port = port
-        self.prefix = ''
+    def __init__(self, storage, user, host, port):
+        self._storage = storage
+
+        self._user = user
+        self._host = host
+        self._port = port
+
+        self._original_user = user
+        self._current_prefix = ''
+
+    @contextlib.contextmanager
+    def _prefix(self, command):
+        old_prefix = self._current_prefix
+        self._current_prefix = f'{self._current_prefix} {command} '
+        yield
+        self._current_prefix = old_prefix
+
+    @contextlib.contextmanager
+    def _cd(self, path: Path, delete=False):
+        with self._prefix(f'cd {path} &&'):
+            yield
+        if delete:
+            await self._rmrf(path)
 
     @as_root
-    async def sudo(self, command, strip=True):
+    async def _sudo(self, command, strip=True):
         """Run command on server as root user."""
-        return await self.run(command, strip)
+        return await self._run(command, strip)
 
     @as_root
-    async def create_user(self):
+    async def _create_user(self):
         """Create user if not exist and sync ssh keys."""
         try:
-            await self.run("id -u {}".format(self.original_user))
-        except TaskSubprocessError:
-            await self.run(
+            await self._run("id -u {}".format(self._original_user))
+        except TaskRunError:
+            await self._run(
                 "adduser --quiet --disabled-password"
-                " --gecos \"{0}\" {0}".format(self.original_user)
+                " --gecos \"{0}\" {0}".format(self._original_user)
             )
 
             local_ssh_public_key = Path('~/.ssh/id_rsa.pub')
             local_ssh_public_key = local_ssh_public_key.expanduser()
             keys_path = Path(
-                '/', 'home' if self.original_user != 'root' else '',
-                self.original_user, '.ssh'
+                '/', 'home' if self._original_user != 'root' else '',
+                self._original_user, '.ssh'
             )
 
-            await self.mkdir(keys_path)
-            await self.run(f'chown -hR {self.original_user} {keys_path}')
-            await self.run('echo "{}" >> {}'.format(
+            await self._mkdir(keys_path)
+            await self._run(f'chown -hR {self._original_user} {keys_path}')
+            await self._run('echo "{}" >> {}'.format(
                 local_ssh_public_key.read_text().strip(),
                 keys_path / 'authorized_keys'
             ))
 
     @as_root
-    async def apt_install(self, *packages):
-        await self.run('DEBIAN_FRONTEND=noninteractive apt-get update -y -q && apt-get upgrade -y -q')
-        await self.run(
-            'DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends '
-            '--no-install-suggests {}'.format(' '.join(packages))
-        )
+    async def _apt_install(self, *packages):
+        with self._prefix('DEBIAN_FRONTEND=noninteractive'):
+            await self._run('apt-get update -y -q')
+            await self._run('apt-get upgrade -y -q')
+            await self._run(
+                'apt-get install -y -q --no-install-recommends '
+                '--no-install-suggests {}'.format(' '.join(packages))
+            )
 
-    async def run(self, command, strip=True) -> str:
-        if self.prefix:
-            command = f'{self.prefix} {command}'
-        response = await self.subprocess(
-            f"ssh -p {self.port} {self.user}@{self.host} '{command}'"
+    async def _run(self, command, strip=True) -> str:
+        print(self._host, 'run', self._current_prefix, command)
+        response = await self._local(
+            f"ssh -p {self._port} {self._user}@{self._host} "
+            f"'{self._current_prefix}{command}'"
         ) or ''
         if strip:
             response = response.strip()
         return response
 
-    async def rmrf(self, path: Path):
-        await self.run(f'rm -rf {path}')
+    async def _rmrf(self, path: Path):
+        await self._run(f'rm -rf {path}')
 
-    async def mkdir(self, path: Path, remove_existing=False):
-        if remove_existing:
-            await self.rmrf(path)
-        await self.run(f'mkdir -p {path}')
+    async def _mkdir(self, path: Path, delete=False):
+        if delete:
+            await self._rmrf(path)
+        await self._run(f'mkdir -p {path}')
 
-    async def upload(self, local_path: Path, remote_path: Path):
-        await self.subprocess(
-            f'scp -r -P {self.port} {local_path} '
-            f'{self.user}@{self.host}:{remote_path}')
+    async def _upload(self, local_path: Path, path: Path):
+        await self._local(
+            f'scp -r -P {self._port} {local_path} '
+            f'{self._user}@{self._host}:{path}'
+        )
 
-    async def upload_template(
-            self, local_path: Path, remote_path: Path, context: dict = None):
+    async def _upload_template(
+            self, local_path: Path, path: Path, context: dict = None):
         render_path = Path(f'{local_path}.render')
         template = jinja2.Template(local_path.read_text())
         render_path.write_text(template.render(context))
         try:
-            await self.upload(render_path, remote_path)
+            await self._upload(render_path, path)
         finally:
             render_path.unlink()
 
-    async def download_and_unpack(self, url: str, dest_dir: Path = Path('.')):
-        await self.run(f'wget -q {url}')
+    async def _download_and_unpack(self, url: str, dest_dir: Path = Path('.')):
+        print('download and unpack', url)
+        await self._run(f'wget -q {url}')
         archive = url.split('/')[-1]
-        await self.run(f'tar xf {archive}')
+        await self._run(f'tar xf {archive}')
         archive_dir = archive.split('.tar')[0]
 
-        await self.mkdir(dest_dir)
-        await self.run(f'mv {archive_dir}/* {dest_dir}')
+        await self._mkdir(dest_dir)
+        await self._run(f'mv {archive_dir}/* {dest_dir}')
 
-        await self.rmrf(archive)
-        await self.rmrf(archive_dir)
+        await self._rmrf(archive)
+        await self._rmrf(archive_dir)
 
-    @contextlib.contextmanager
-    def cd(self, path: Path):
-        old_prefix = self.prefix
-        self.prefix = f'cd {path} && {self.prefix}'
-        yield
-        self.prefix = old_prefix
+        print(await self._run('ls'))
 
-    def get_components(self):
-        for host_ in SETTINGS['hosts'].values():
-            if self.host == host_['public']:
-                return host_['components']
-        return None
+    # def get_components(self):
+    #     for host_ in SETTINGS['hosts'].values():
+    #         if self.host == host_['public']:
+    #             return host_['components']
+    #     return None
 
 
 class DeployComponentTasks(DeployTasksBase):

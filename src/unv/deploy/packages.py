@@ -2,9 +2,11 @@ import copy
 
 from pathlib import Path
 
-from unv.utils.collections import update_dict_recur
-from unv.web.settings import SETTINGS as WEB_SETTINGS
 from unv.utils.os import get_homepath
+from unv.utils.tasks import register
+from unv.utils.collections import update_dict_recur
+
+from unv.web.settings import SETTINGS as WEB_SETTINGS
 
 from .helpers import filter_hosts
 from .tasks import DeployTasksBase
@@ -153,30 +155,54 @@ from .settings import SETTINGS
 #         self.pip('install -U setuptools')
 
 
-class NginxTasks(DeployTasksBase):
+class NginxComponentSettings:
+    NAME = 'nginx'
     DEFAULT = {
-        'master': False,
-        'versions': {
-            'nginx': '1.15.9',
-            'pcre': '8.42',
-            'zlib': '1.2.11',
-            'openssl': '1.1.1a'
+        'master': True,
+        'root': 'app',
+        'packages': {
+            'nginx': 'http://nginx.org/download/nginx-1.15.9.tar.gz',
+            'pcre': 'https://ftp.pcre.org/pub/pcre/pcre-8.42.tar.gz',
+            'zlib': 'http://www.zlib.net/zlib-1.2.11.tar.gz',
+            'openssl': 'https://www.openssl.org/source/openssl-1.1.1a.tar.gz'
         },
         'connections': 1000,
-        'workers': 1
+        'workers': 1,
+        'config': {
+        },
+        'include': {}
     }
+
+    def __init__(self, root, settings=None):
+        if settings is None:
+            settings = SETTINGS['components'].get('nginx', {})
+        # self.root = Path(root).parent
+        self._data = update_dict_recur(
+            copy.deepcopy(self.__class__.DEFAULT), settings)
+
+    @property
+    def home(self):
+        return Path('~')
 
     @property
     def root(self):
-        return self.home / self.settings['dir']
+        return self.home / self._data['root']
+
+    @property
+    def build(self):
+        return self.root / 'build'
+
+    @property
+    def packages(self):
+        return self._data['packages']
 
     @property
     def workers(self):
-        return self.settings['workers']
+        return self._data['workers']
 
     @property
     def connections(self):
-        return self.settings['connections']
+        return self._data['connections']
 
     @property
     def domain(self):
@@ -196,58 +222,53 @@ class NginxTasks(DeployTasksBase):
                     host['private'], WEB_SETTINGS['port'] + instance
                 )
 
-    def build(self):
+
+class NginxTasks(DeployTasksBase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._settings = NginxComponentSettings(__file__)
+
+    @register
+    async def build(self):
         # https://www.nginx.com/blog/thread-pools-boost-performance-9x/
         #  --with-threads
         # http://nginx.org/en/docs/http/ngx_http_core_module.html#aio
         #  --with-file-aio
 
-        sudo('apt-get update && apt-get upgrade -y')
-        sudo('apt-get build-dep -y --no-install-recommends '
-             '--no-install-suggests nginx')
+        await self._create_user()
+        await self._apt_install(
+            'build-essential', 'autotools-dev', 'libexpat-dev',
+            'libgd-dev', 'libgeoip-dev', 'libluajit-5.1-dev',
+            'libmhash-dev', 'libpam0g-dev', 'libperl-dev',
+            'libxslt1-dev'
+        )
 
-        packages = {
-            'nginx': 'http://nginx.org/download/nginx-{}.tar.gz',
-            'pcre': 'https://ftp.pcre.org/pub/pcre/pcre-{}.tar.gz',
-            'zlib': 'http://www.zlib.net/zlib-{}.tar.gz',
-            'openssl': 'https://www.openssl.org/source/openssl-{}.tar.gz'
-        }
+        await self._mkdir(self._settings.build, delete=True)
+        with self._cd(self._settings.build, delete=True):
+            for package, url in self._settings.packages.items():
+                await self._download_and_unpack(url, Path('.', package))
 
-        mkdir(self.root)
-
-        build_path = self.root.parent / 'build'
-        mkdir(build_path, remove_existing=True)
-
-        with cd(build_path):
-            for package, url in packages.items():
-                download_and_unpack(
-                    url.format(self.settings['versions'][package]),
-                    Path('.', package)
-                )
-
-            with cd('nginx'):
-                run("./configure --prefix={nginx_dir} "
-                    "--user='{user}' --group='{user}' --with-pcre=../pcre "
+            with self._cd('nginx'):
+                await self._run(
+                    f"./configure --prefix={self._settings.root} "
+                    f"--user='{self._user}' --group='{self._user}' "
+                    "--with-pcre=../pcre "
                     "--with-pcre-jit --with-zlib=../zlib "
                     "--with-openssl=../openssl --with-http_ssl_module "
                     "--with-http_v2_module --with-threads "
-                    "--with-file-aio".format(
-                        nginx_dir=self.root,
-                        user=self.settings['user']
-                    ))
-                run('make > /dev/null')
-                run('make install')
-
-        rmrf(build_path)
+                    "--with-file-aio"
+                )
+                await self._run('make')
+                await self._run('make install')
 
     def sync(self):
-        if self.settings['master']:
-            self.upload_template(
+        if self._settings.master:
+            await self._upload_template(
                 Path(self.settings['config']['template']),
                 self.root / 'conf' / self.settings['config']['name']
             )
 
-        mkdir(self.root / 'conf' / 'apps')
+        await self._mkdir(self.root / 'conf' / 'apps')
 
         for local_path, remote_name in self.settings['include'].items():
             self.upload_template(
@@ -259,14 +280,13 @@ class NginxTasks(DeployTasksBase):
 
 
 class VagrantTasks(DeployTasksBase):
-    def setup(self):
-        await self.subprocess('vagrant destroy -f')
-        await self.subprocess('vagrant up')
-        await self.update_local_known_hosts()
-        await self.subprocess('vagrant ssh -c "sleep 1"')
-        await self.subprocess('rm -f *.log')
+    async def setup(self):
+        await self._local('vagrant destroy -f')
+        await self._local('vagrant up')
+        await self._update_local_known_hosts()
+        await self._local('vagrant ssh -c "sleep 1"')
 
-    async def update_local_known_hosts(self):
+    async def _update_local_known_hosts(self):
         ips = [host['public'] for _, host in filter_hosts()]
         known_hosts = get_homepath() / '.ssh' / 'known_hosts'
 
@@ -281,4 +301,4 @@ class VagrantTasks(DeployTasksBase):
                 f.truncate()
 
         for ip in ips:
-            await self.subprocess(f'ssh-keyscan {ip} >> {known_hosts}')
+            await self._local(f'ssh-keyscan {ip} >> {known_hosts}')
