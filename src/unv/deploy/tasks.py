@@ -36,11 +36,13 @@ class DeployTasksBase(TasksBase):
         yield
         self._current_prefix = old_prefix
 
-    @contextlib.contextmanager
-    def _cd(self, path: Path, delete=False):
+    @contextlib.asynccontextmanager
+    async def _cd(self, path: Path, temporary=False):
+        if temporary:
+            await self._mkdir(path, delete=True)
         with self._prefix(f'cd {path} &&'):
             yield
-        if delete:
+        if temporary:
             await self._rmrf(path)
 
     @as_root
@@ -84,12 +86,16 @@ class DeployTasksBase(TasksBase):
             )
 
     async def _run(self, command, strip=True) -> str:
+        import time
+        start = time.time()
         response = await self._local(
             f"ssh -p {self._port} {self._user}@{self._host} "
             f"'{self._current_prefix}{command}'"
         ) or ''
         if strip:
             response = response.strip()
+        end = time.time() - start
+        print(f'run {end} sec', self._host, command)
         return response
 
     async def _rmrf(self, path: Path):
@@ -108,6 +114,7 @@ class DeployTasksBase(TasksBase):
 
     async def _upload_template(
             self, local_path: Path, path: Path, context: dict = None):
+        context = context or {}
         render_path = Path(f'{local_path}.render')
         template = jinja2.Template(local_path.read_text())
         render_path.write_text(template.render(context))
@@ -128,28 +135,22 @@ class DeployTasksBase(TasksBase):
         await self._rmrf(archive)
         await self._rmrf(archive_dir)
 
-    # def get_components(self):
-    #     for host_ in SETTINGS['hosts'].values():
-    #         if self.host == host_['public']:
-    #             return host_['components']
-    #     return None
-
 
 class DeployComponentTasks(DeployTasksBase):
     pass
 
 
 class DeployTasksManager(TasksManager):
-    def run_task(self, task_class, command, args):
+    def run_task(self, task_class, name, args):
         if issubclass(task_class, DeployTasksBase):
-            method = getattr(task_class, command)
+            method = getattr(task_class, name)
             user = self.storage['deploy']['user']
             parallel = hasattr(method, '__parallel__')
 
             tasks = [
                 getattr(task_class(
                     self.storage, user, host['ip'], host['port']),
-                    command
+                    name
                 )(*args)
                 for host in self.storage['deploy']['hosts']
             ]
@@ -161,9 +162,8 @@ class DeployTasksManager(TasksManager):
             else:
                 for task in tasks:
                     asyncio.run(task)
-
-            return
-        return super().run_task(task_class, command, args)
+        else:
+            return super().run_task(task_class, name, args)
 
     def select_component(self, name: str = '', host: str = ''):
         self.storage['deploy'] = {

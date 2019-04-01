@@ -3,22 +3,22 @@ import pathlib
 
 from unv.utils.tasks import register
 from unv.deploy.tasks import DeployTasksBase, DeployTasksManager, parallel
-from unv.deploy.packages import NginxTasks
+from unv.deploy.nginx import NginxTasks
 
 
 class AppTasks(DeployTasksBase):
-    # @register
-    # @parallel
-    # async def benchmark(self):
-    #     response = await self.run('expr 2 + 2')
-    #     print(self.host, 'before sleep')
-    #     # await self.run('sleep 3')
-    #     response = await self.run(f'expr {response} + 2')
-    #     print(self.host, response)
+    @register
+    @parallel
+    async def benchmark(self):
+        response = await self.run('expr 2 + 2')
+        print(self.host, 'before sleep')
+        # await self.run('sleep 3')
+        response = await self.run(f'expr {response} + 2')
+        print(self.host, response)
 
-    #     await self.put(pathlib.Path('tests/test.txt'), pathlib.Path('~/'))
-    #     print(await self.run('ls -la'))
-    #     return response
+        await self.put(pathlib.Path('tests/test.txt'), pathlib.Path('~/'))
+        print(await self.run('ls -la'))
+        return response
 
     @register
     async def setup(self):
@@ -46,5 +46,5 @@ if __name__ == '__main__':
     manager = DeployTasksManager()
     manager.register(AppTasks)
     manager.register(NginxTasks)
-    manager.select_component('test')
+    manager.select_component('nginx')
     manager.run(' '.join(sys.argv[1:]))
