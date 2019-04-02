@@ -1,12 +1,10 @@
 import asyncio
-import shutil
 import contextlib
 
 from pathlib import Path
 
 import jinja2
 
-from unv.utils.os import get_homepath
 from unv.utils.tasks import TasksBase, TasksManager, TaskRunError
 
 from .helpers import filter_hosts, as_root
@@ -134,10 +132,6 @@ class DeployTasksBase(TasksBase):
 
         await self._rmrf(archive)
         await self._rmrf(archive_dir)
-
-
-class DeployComponentTasks(DeployTasksBase):
-    pass
 
 
 class DeployTasksManager(TasksManager):

@@ -10,7 +10,6 @@ from unv.utils.collections import update_dict_recur
 
 from .helpers import filter_hosts
 from .tasks import DeployTasksBase
-from .settings import SETTINGS
 
 
 class VagrantTasks(DeployTasksBase):

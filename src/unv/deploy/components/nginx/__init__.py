@@ -2,9 +2,9 @@ from pathlib import Path
 
 from unv.utils.tasks import register
 
-from ..tasks import DeployTasksBase
-from ..settings import ComponentSettingsBase
-from ..mixins import SystemdTasksMixin
+from ...tasks import DeployTasksBase
+from ...settings import ComponentSettingsBase
+from ...mixins import SystemdTasksMixin
 
 
 class NginxComponentSettings(ComponentSettingsBase):

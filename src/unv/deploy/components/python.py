@@ -1,3 +1,4 @@
+# TODO: move to new tasks system, as nested subpackage?
 # class PythonPackage(Package):
 #     DEFAULT = {
 #         'root': 'python',
