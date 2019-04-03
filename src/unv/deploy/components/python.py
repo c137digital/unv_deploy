@@ -1,63 +1,72 @@
-# TODO: move to new tasks system, as nested subpackage?
-# class PythonPackage(Package):
-#     DEFAULT = {
-#         'root': 'python',
-#         'version': '3.7.2',
-#         'build': {
-#             'fast': True,
-#             'dir': '/tmp/python'
-#         }
-#     }
+from ..tasks import DeployTasksBase
+from ..settings import ComponentSettingsBase
 
-#     @property
-#     def _root(self):
-#         return self.home / self.settings['root']
 
-#     def pip(self, command: str):
-#         self.bin(f'pip3 {command}')
+class PythonComponentSettings(ComponentSettingsBase):
+    NAME = 'python'
+    DEFAULT = {
+        'root': 'python',
+        'version': '3.7.2',
+        'build': {
+            'fast': True,
+            'path': '/tmp/python'
+        }
+    }
 
-#     def run(self, command: str):
-#         self.bin(f'python3 {command}')
+    @property
+    def version(self):
+        return self._data['version']
 
-#     def bin(self, command: str, command_only=False):
-#         command = str(self._root / 'bin' / command)
-#         if command_only:
-#             return command
-#         return run(command)
+    @property
+    def fast_build(self):
+        return self._data['build']['fast']
 
-#     def build(self):
-#         version = self.settings['version']
-#         fast_build = self.settings['build']['fast']
-#         build_dir = Path(self.settings['build']['dir'])
+    @property
+    def build_path(self):
+        return self._data['build']['path']
 
-#         apt_install(
-#             'make', 'build-essential', 'libssl-dev', 'zlib1g-dev',
-#             'libbz2-dev', 'libreadline-dev', 'libsqlite3-dev', 'wget', 'curl',
-#             'llvm', 'libncurses5-dev', 'libncursesw5-dev', 'xz-utils',
-#             'tk-dev', 'tcl-dev', 'libffi-dev', 'wget'
-#         )
 
-#         mkdir(build_dir, remove_existing=True)
-#         mkdir(self._root, remove_existing=True)
+class PythonComponentTasks(DeployTasksBase):
+    async def pip(self, command: str):
+        await self.bin(f'pip3 {command}')
 
-#         with cd(build_dir):
-#             url = 'https://www.python.org/ftp/' \
-#                 f'python/{version}/Python-{version}.tar.xz'
-#             download_and_unpack(url, Path('./'))
+    async def run(self, command: str):
+        await self.bin(f'python3 {command}')
 
-#             run(
-#                 './configure --prefix={0} '
-#                 '--enable-loadable-sqlite-extensions --enable-shared '
-#                 '--with-system-expat --enable-optimizations '
-#                 'LDFLAGS="-L{0}/extlib/lib -Wl,--rpath={0}/lib '
-#                 '-Wl,--rpath={0}/extlib/lib" '
-#                 'CPPFLAGS="-I{0}/extlib/include"'.format(self._root)
-#             )
-#             run('make -j$(nproc) {}'.format(
-#                 'build_all' if fast_build else 'build'))
-#             run('make install > /dev/null')
-#         rmrf(build_dir)
+    async def bin(self, command: str):
+        return await self._run(str(self._root / 'bin' / command))
 
-#         self.pip('install wheel')
-#         self.pip('install -U pip')
-#         self.pip('install -U setuptools')
+    async def build(self):
+        version = self._settings.version
+        fast_build = self._settings.fast_build
+        build_path = self._settings.build_path
+
+        await self._apt_install(
+            'make', 'build-essential', 'libssl-dev', 'zlib1g-dev',
+            'libbz2-dev', 'libreadline-dev', 'libsqlite3-dev', 'wget', 'curl',
+            'llvm', 'libncurses5-dev', 'libncursesw5-dev', 'xz-utils',
+            'tk-dev', 'tcl-dev', 'libffi-dev', 'wget'
+        )
+
+        await self._mkdir(self._root, delete=True)
+
+        async with self._cd(build_path, delete=True):
+            url = 'https://www.python.org/ftp/' \
+                f'python/{version}/Python-{version}.tar.xz'
+            await self._download_and_unpack(url)
+
+            await self._run(
+                './configure --prefix={0} '
+                '--enable-loadable-sqlite-extensions --enable-shared '
+                '--with-system-expat --enable-optimizations '
+                'LDFLAGS="-L{0}/extlib/lib -Wl,--rpath={0}/lib '
+                '-Wl,--rpath={0}/extlib/lib" '
+                'CPPFLAGS="-I{0}/extlib/include"'.format(self._root_abs)
+            )
+            await self._run('make -j$(nproc) {}'.format(
+                'build_all' if fast_build else 'build'))
+            await self._run('make install > /dev/null')
+
+        await self._pip('install wheel')
+        await self._pip('install -U pip')
+        await self._pip('install -U setuptools')

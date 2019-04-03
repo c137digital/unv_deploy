@@ -44,14 +44,6 @@ class NginxComponentSettings(ComponentSettingsBase):
     }
 
     @property
-    def root(self):
-        return self.home / self._data['root']
-
-    @property
-    def root_abs(self):
-        return self.home_abs / self._data['root']
-
-    @property
     def build(self):
         return self.root / 'build'
 
@@ -115,7 +107,7 @@ class NginxComponentSettings(ComponentSettingsBase):
         return self._data['master']
 
 
-class NginxTasks(DeployTasksBase, SystemdTasksMixin):
+class NginxComponentTasks(DeployTasksBase, SystemdTasksMixin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._settings = NginxComponentSettings(__file__)

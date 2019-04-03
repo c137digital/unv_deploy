@@ -36,3 +36,11 @@ class ComponentSettingsBase:
     @property
     def systemd(self):
         return self._data.get('systemd', {})
+
+    @property
+    def root(self):
+        return self.home / self._data['root']
+
+    @property
+    def root_abs(self):
+        return self.home_abs / self._data['root']
