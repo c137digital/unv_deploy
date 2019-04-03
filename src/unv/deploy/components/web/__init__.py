@@ -1,0 +1,2 @@
+class WebComponentTasks(DeployTasksBase):
+    pass

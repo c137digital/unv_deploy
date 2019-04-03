@@ -3,7 +3,7 @@ import pathlib
 
 from unv.utils.tasks import register
 from unv.deploy.tasks import DeployTasksBase, DeployTasksManager, parallel
-from unv.deploy.nginx import NginxTasks
+from unv.deploy.components.nginx import NginxComponentTasks
 
 
 class AppTasks(DeployTasksBase):
@@ -45,6 +45,6 @@ class AppTasks(DeployTasksBase):
 if __name__ == '__main__':
     manager = DeployTasksManager()
     manager.register(AppTasks)
-    manager.register(NginxTasks)
+    manager.register(NginxComponentTasks)
     manager.select_component('nginx')
     manager.run(' '.join(sys.argv[1:]))

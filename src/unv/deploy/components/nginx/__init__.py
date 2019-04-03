@@ -2,7 +2,7 @@ from pathlib import Path
 
 from unv.utils.tasks import register
 
-from ...tasks import DeployTasksBase
+from ...tasks import DeployComponentTasksBase
 from ...settings import ComponentSettingsBase
 from ...mixins import SystemdTasksMixin
 
@@ -107,10 +107,8 @@ class NginxComponentSettings(ComponentSettingsBase):
         return self._data['master']
 
 
-class NginxComponentTasks(DeployTasksBase, SystemdTasksMixin):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._settings = NginxComponentSettings(__file__)
+class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
+    SETTINGS = NginxComponentSettings
 
     @register
     async def build(self):

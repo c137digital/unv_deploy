@@ -8,7 +8,7 @@ import jinja2
 from unv.utils.tasks import TasksBase, TasksManager, TaskRunError
 
 from .helpers import filter_hosts, as_root
-from .settings import SETTINGS
+from .settings import SETTINGS, ComponentSettingsBase
 
 
 def parallel(task):
@@ -132,6 +132,21 @@ class DeployTasksBase(TasksBase):
 
         await self._rmrf(archive)
         await self._rmrf(archive_dir)
+
+
+class DeployComponentTasksBase(DeployTasksBase):
+    SETTINGS = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        settings = self.__class__.SETTINGS
+
+        if settings is None or not issubclass(settings, ComponentSettingsBase):
+            raise ValueError(
+                "Provide correct 'SETTINGS' value "
+                "shoult be a sub-class 'ComponentSettingsBase'")
+
+        self._settings = settings(__file__)
 
 
 class DeployTasksManager(TasksManager):
