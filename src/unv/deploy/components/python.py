@@ -1,4 +1,4 @@
-from ..tasks import DeployTasksBase
+from ..tasks import DeployComponentTasksBase
 from ..settings import ComponentSettingsBase
 
 
@@ -26,7 +26,9 @@ class PythonComponentSettings(ComponentSettingsBase):
         return self._data['build']['path']
 
 
-class PythonComponentTasks(DeployTasksBase):
+class PythonComponentTasks(DeployComponentTasksBase):
+    SETTINGS = PythonComponentSettings(__file__)
+
     async def pip(self, command: str):
         await self.bin(f'pip3 {command}')
 
