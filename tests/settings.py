@@ -20,7 +20,7 @@ SETTINGS = {
         },
         'components': {
             'nginx': {
-                'user': 'someuser10',
+                'user': 'nginx',
                 'configs': {
                     TEST_NGINX_CONFIG: 'conf/apps/test.conf'
                 }

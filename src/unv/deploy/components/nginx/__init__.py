@@ -108,7 +108,7 @@ class NginxComponentSettings(ComponentSettingsBase):
 
 
 class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
-    SETTINGS = NginxComponentSettings
+    SETTINGS = NginxComponentSettings(__file__)
 
     @register
     async def build(self):
@@ -117,7 +117,7 @@ class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
             return
 
         await self._create_user()
-        await self._mkdir(self._settings.include)
+        await self._mkdir(self._settings.include.parent)
         await self._apt_install(
             'build-essential', 'autotools-dev', 'libexpat-dev',
             'libgd-dev', 'libgeoip-dev', 'libluajit-5.1-dev',

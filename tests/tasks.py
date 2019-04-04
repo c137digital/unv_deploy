@@ -45,6 +45,6 @@ class AppTasks(DeployTasksBase):
 if __name__ == '__main__':
     manager = DeployTasksManager()
     manager.register(AppTasks)
-    manager.register(NginxComponentTasks)
+    manager.register(NginxComponentTasks, 'nginx')
     manager.select_component('nginx')
     manager.run(' '.join(sys.argv[1:]))

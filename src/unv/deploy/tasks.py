@@ -141,12 +141,12 @@ class DeployComponentTasksBase(DeployTasksBase):
         super().__init__(*args, **kwargs)
         settings = self.__class__.SETTINGS
 
-        if settings is None or not issubclass(settings, ComponentSettingsBase):
+        if settings is None or not isinstance(settings, ComponentSettingsBase):
             raise ValueError(
                 "Provide correct 'SETTINGS' value "
-                "shoult be a sub-class 'ComponentSettingsBase'")
+                "shoult be an instance of class 'ComponentSettingsBase'")
 
-        self._settings = settings(__file__)
+        self._settings = settings
 
 
 class DeployTasksManager(TasksManager):
