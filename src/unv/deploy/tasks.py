@@ -137,9 +137,9 @@ class DeployTasksBase(TasksBase):
 class DeployComponentTasksBase(DeployTasksBase):
     SETTINGS = None
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        settings = self.__class__.SETTINGS
+    def __init__(self, storage, user, host, port, settings=None):
+        super().__init__(storage, user, host, port)
+        settings = settings or self.__class__.SETTINGS
 
         if settings is None or not isinstance(settings, ComponentSettingsBase):
             raise ValueError(

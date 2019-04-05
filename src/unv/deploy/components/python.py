@@ -1,3 +1,5 @@
+from unv.utils.tasks import register
+
 from ..tasks import DeployComponentTasksBase
 from ..settings import ComponentSettingsBase
 
@@ -30,14 +32,15 @@ class PythonComponentTasks(DeployComponentTasksBase):
     SETTINGS = PythonComponentSettings(__file__)
 
     async def pip(self, command: str):
-        await self.bin(f'pip3 {command}')
+        return await self.bin(f'pip3 {command}')
 
     async def run(self, command: str):
-        await self.bin(f'python3 {command}')
+        return await self.bin(f'python3 {command}')
 
     async def bin(self, command: str):
-        return await self._run(str(self._root / 'bin' / command))
+        return await self._run(str(self._settings.root_abs / 'bin' / command))
 
+    @register
     async def build(self):
         version = self._settings.version
         fast_build = self._settings.fast_build
@@ -50,9 +53,9 @@ class PythonComponentTasks(DeployComponentTasksBase):
             'tk-dev', 'tcl-dev', 'libffi-dev', 'wget'
         )
 
-        await self._mkdir(self._root, delete=True)
+        await self._mkdir(self._settings.root, delete=True)
 
-        async with self._cd(build_path, delete=True):
+        async with self._cd(build_path, temporary=True):
             url = 'https://www.python.org/ftp/' \
                 f'python/{version}/Python-{version}.tar.xz'
             await self._download_and_unpack(url)
@@ -63,12 +66,14 @@ class PythonComponentTasks(DeployComponentTasksBase):
                 '--with-system-expat --enable-optimizations '
                 'LDFLAGS="-L{0}/extlib/lib -Wl,--rpath={0}/lib '
                 '-Wl,--rpath={0}/extlib/lib" '
-                'CPPFLAGS="-I{0}/extlib/include"'.format(self._root_abs)
+                'CPPFLAGS="-I{0}/extlib/include"'.format(
+                    self._settings.root_abs
+                )
             )
             await self._run('make -j$(nproc) {}'.format(
                 'build_all' if fast_build else 'build'))
             await self._run('make install > /dev/null')
 
-        await self._pip('install wheel')
-        await self._pip('install -U pip')
-        await self._pip('install -U setuptools')
+        await self.pip('install wheel')
+        await self.pip('install -U pip')
+        await self.pip('install -U setuptools')

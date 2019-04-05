@@ -9,11 +9,14 @@ SETTINGS = {
                 '1': {
                     'public': '10.51.21.11',
                     'private': '0.0.0.0',
-                    'components': ['test', 'nginx']
+                    'components': ['test', 'nginx', 'app']
                 }
             }
         },
         'components': {
+            'app': {
+                'user': 'app',
+            },
             'nginx': {
                 'user': 'nginx',
                 'configs': {

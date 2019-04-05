@@ -1,0 +1,17 @@
+[Unit]
+Description={{ settings.description }} [{{ instance }}]
+After=network.target
+
+[Service]
+Type=simple
+User={{ settings.user }}
+Group={{ settings.user }}
+ExecStart={{ settings.bin }}
+WorkingDirectory={{ settings.home_abs }}
+LimitNOFILE=2000
+
+Environment=PYTHONPATH={{ settings.home_abs }}
+Environment=SETTINGS={{ settings.module }}
+
+[Install]
+WantedBy=multi-user.target app.target

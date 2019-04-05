@@ -1,10 +1,10 @@
 Vagrant.configure("2") do |config|
     config.vm.box = "generic/ubuntu1604"
-    config.vm.hostname = "unv_deploy_testing"
+    config.vm.hostname = "unv.deploy"
     config.vm.network "private_network", ip: "10.51.21.11"
     
     config.vm.provider "virtualbox" do |v|
-        v.name = 'unv_web_template'
+        v.name = 'unv_deploy_testing'
         v.memory = 512
         v.cpus = 2
         v.customize ["modifyvm", :id, "--uartmode1", "disconnected"]

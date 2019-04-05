@@ -9,12 +9,15 @@ class AppComponentSettings(ComponentSettingsBase):
     NAME = 'app'
     DEFAULT = {
         'settings': 'secure.production',
-        'bin': 'app'
+        'bin': 'app',
+        'description': "Web application",
     }
 
     @property
     def python(self):
-        return PythonComponentSettings(__file__, self._data.get('python', {}))
+        settings = self._data.get('python', {})
+        settings['user'] = self._data['user']
+        return PythonComponentSettings(__file__, settings)
 
     @property
     def bin(self):
@@ -28,10 +31,16 @@ class AppComponentSettings(ComponentSettingsBase):
 class AppComponentTasks(DeployComponentTasksBase):
     SETTINGS = AppComponentSettings(__file__)
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._python = 
+    def __init__(self, storage, user, host, port, settings=None):
+        super().__init__(storage, user, host, port)
+        self._python = PythonComponentTasks(
+            storage, user, host, port, self._settings.python)
 
     @register
-    async def sync(self):
-        pass
+    async def build(self):
+        await self._create_user()
+        await self._python.build()
+
+    @register
+    async def run(self):
+        print(await self._python.run('-c "print(2+2)"'))
