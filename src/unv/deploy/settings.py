@@ -6,7 +6,10 @@ from unv.utils.collections import update_dict_recur
 from unv.app.core import create_component_settings
 
 
-DEFAULT = {}
+DEFAULT = {
+    "hosts": {},
+    "components": {},
+}
 
 SCHEMA = {}
 
