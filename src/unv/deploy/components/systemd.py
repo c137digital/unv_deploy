@@ -10,7 +10,7 @@ class SystemdTasksMixin:
     def _systemd_services(self):
         systemd = self._settings.systemd
         for template, original in systemd['services'].items():
-            name = original['name']
+            name = original.get('name', template)
             instances = original.get('instances', 1)
             for instance in range(1, instances + 1):
                 service = original.copy()
@@ -23,11 +23,16 @@ class SystemdTasksMixin:
     async def _setup_systemd_units(self):
         for service in self._systemd_services:
             service_path = Path('/etc', 'systemd', 'system', service['name'])
-            await self._upload_template(
-                (self._settings.local_root / service['template']).resolve(),
-                service_path,
-                {'instance': service['instance'], 'settings': self._settings}
-            )
+            context = {
+                'instance': service['instance'],
+                'settings': self._settings
+            }.copy()
+            context.update(service.get('context', {}))
+            path = service['template']
+            if not str(path).startswith('/'):
+                path = (self._settings.local_root / service['template'])
+                path = path.resolve()
+            await self._upload_template(path, service_path, context)
             print(await self._run(f"cat {service_path}"))
 
         await self._run('systemctl daemon-reload')

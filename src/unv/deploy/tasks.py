@@ -105,7 +105,7 @@ class DeployTasksBase(TasksBase):
             await self._rmrf(path)
         await self._run(f'mkdir -p {path}')
 
-    async def _upload(self, local_path: Path, path: Path):
+    async def _upload(self, local_path: Path, path: Path = '~/'):
         await self._local(
             f'scp -r -P {self._port} {local_path} '
             f'{self._user}@{self._host}:{path}'
@@ -154,15 +154,14 @@ class DeployTasksManager(TasksManager):
     def run_task(self, task_class, name, args):
         if issubclass(task_class, DeployTasksBase):
             method = getattr(task_class, name)
-            user = self.storage['deploy']['user']
+            user, hosts = self._select_hosts(task_class.NAMESPACE)
             parallel = hasattr(method, '__parallel__')
-
             tasks = [
                 getattr(task_class(
                     self.storage, user, host['ip'], host['port']),
                     name
                 )(*args)
-                for host in self.storage['deploy']['hosts']
+                for host in hosts
             ]
 
             if parallel:
@@ -175,12 +174,11 @@ class DeployTasksManager(TasksManager):
         else:
             return super().run_task(task_class, name, args)
 
-    def select_component(self, name: str = '', host: str = ''):
-        self.storage['deploy'] = {
-            'user': SETTINGS['components'][name]['user'],
-            'hosts': [
+    def _select_hosts(self, name: str = ''):
+        return (
+            SETTINGS['components'][name]['user'],
+            [
                 {'ip': host_['public'], 'port': host_.get('ssh', 22)}
                 for name, host_ in filter_hosts(name)
-                if not host or name == host
             ]
-        }
+        )

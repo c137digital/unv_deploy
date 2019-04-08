@@ -4,7 +4,6 @@ from unv.utils.tasks import register
 
 from ...tasks import DeployComponentTasksBase
 from ...helpers import ComponentSettingsBase
-from ...settings import SETTINGS
 
 from ..systemd import SystemdTasksMixin
 
@@ -32,7 +31,6 @@ class NginxComponentSettings(ComponentSettingsBase):
         'configs': {
             'server.conf': 'conf/nginx.conf'
         },
-        'configs_from_components': True,
         'connections': 1000,
         'workers': 1,
         'aio': 'on',
@@ -56,14 +54,7 @@ class NginxComponentSettings(ComponentSettingsBase):
 
     @property
     def configs(self):
-        configs = self._data['configs'].copy()
-        if self._data['configs_from_components']:
-            # for data in SETTINGS['components'].values():
-            #     data.get('nginx', {})
-            # TODO: we must know root of component to find path or not?
-            pass
-
-        for template, path in configs:
+        for template, path in self._data['configs'].items():
             if not template.startswith('/'):
                 template = (self.local_root / template).resolve()
             yield Path(template), self.root / path
@@ -118,6 +109,7 @@ class NginxComponentSettings(ComponentSettingsBase):
 
 
 class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
+    NAMESPACE = 'nginx'
     SETTINGS = NginxComponentSettings(__file__)
 
     @register
@@ -157,4 +149,5 @@ class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
         for template, path in self._settings.configs:
             await self._upload_template(
                 template, path, {'settings': self._settings})
+            print(await self._run(f'cat {path}'))
         await self._setup_systemd_units()

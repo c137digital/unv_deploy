@@ -45,7 +45,6 @@ from unv.deploy.components.app import AppComponentTasks
 
 if __name__ == '__main__':
     manager = DeployTasksManager()
-    manager.register(AppComponentTasks, 'app')
-    manager.register(NginxComponentTasks, 'nginx')
-    manager.select_component('nginx')
+    manager.register(AppComponentTasks)
+    manager.register(NginxComponentTasks)
     manager.run(' '.join(sys.argv[1:]))

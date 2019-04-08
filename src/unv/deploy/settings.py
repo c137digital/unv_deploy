@@ -9,7 +9,8 @@ DEFAULT = {
 SCHEMA = {
     'hosts': {
         'type': 'dict',
-        'keyschema': {
+        'keyschema': {'type': 'string'},
+        'valueschema': {
             'type': 'dict',
             'schema': {
                 'public': {'type': 'string'},
