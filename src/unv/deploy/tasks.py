@@ -8,7 +8,8 @@ import jinja2
 from unv.utils.tasks import TasksBase, TasksManager, TaskRunError
 
 from .helpers import filter_hosts, as_root
-from .settings import SETTINGS, ComponentSettingsBase
+from .settings import SETTINGS
+from .helpers import ComponentSettingsBase
 
 
 def parallel(task):

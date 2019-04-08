@@ -3,8 +3,10 @@ from pathlib import Path
 from unv.utils.tasks import register
 
 from ...tasks import DeployComponentTasksBase
-from ...settings import ComponentSettingsBase
-from ...mixins import SystemdTasksMixin
+from ...helpers import ComponentSettingsBase
+from ...settings import SETTINGS
+
+from ..systemd import SystemdTasksMixin
 
 
 class NginxComponentSettings(ComponentSettingsBase):
@@ -30,6 +32,7 @@ class NginxComponentSettings(ComponentSettingsBase):
         'configs': {
             'server.conf': 'conf/nginx.conf'
         },
+        'configs_from_components': True,
         'connections': 1000,
         'workers': 1,
         'aio': 'on',
@@ -53,7 +56,14 @@ class NginxComponentSettings(ComponentSettingsBase):
 
     @property
     def configs(self):
-        for template, path in self._data['configs'].items():
+        configs = self._data['configs'].copy()
+        if self._data['configs_from_components']:
+            # for data in SETTINGS['components'].values():
+            #     data.get('nginx', {})
+            # TODO: we must know root of component to find path or not?
+            pass
+
+        for template, path in configs:
             if not template.startswith('/'):
                 template = (self.local_root / template).resolve()
             yield Path(template), self.root / path

@@ -2,7 +2,7 @@ from pathlib import Path
 
 from unv.utils.tasks import register
 
-from .helpers import as_root
+from ..helpers import as_root
 
 
 class SystemdTasksMixin:
@@ -36,12 +36,15 @@ class SystemdTasksMixin:
             if service['boot']:
                 await self._run(f'systemctl enable {service["name"]}')
 
-    async def _systemctl(self, command: str):
+    async def _systemctl(self, command: str, display=False):
+        results = {}
         for service in self._systemd_services:
             if 'manage' in service and not service['manage']:
                 continue
 
-            await self._sudo(f'systemctl {command} {service["name"]}')
+            result = await self._sudo(f'systemctl {command} {service["name"]}')
+            results[service['name']] = result
+        return results
 
     @register
     async def start(self):
@@ -57,4 +60,7 @@ class SystemdTasksMixin:
 
     @register
     async def status(self):
-        print(await self._systemctl('status'))
+        results = await self._systemctl('status')
+        for service, result in results.items():
+            print(f'Service: [{service}] ->')
+            print(result)

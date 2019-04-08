@@ -1,5 +1,6 @@
+{% set port = settings.port + instance -%}
 [Unit]
-Description={{ settings.description }} [{{ instance }}]
+Description={{ settings.description }} [{{ port }}]
 After=network.target
 
 [Service]
@@ -8,10 +9,12 @@ User={{ settings.user }}
 Group={{ settings.user }}
 ExecStart={{ settings.bin }}
 WorkingDirectory={{ settings.home_abs }}
-LimitNOFILE=2000
+LimitNOFILE={{ settings.limit_nofile }}
 
 Environment=PYTHONPATH={{ settings.home_abs }}
 Environment=SETTINGS={{ settings.module }}
+Environment=SETTINGS_WEB_PORT={{ port }}
+Environment=SETTINGS_WEB_HOST={{ settings.host }}
 
 [Install]
 WantedBy=multi-user.target app.target

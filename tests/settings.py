@@ -6,11 +6,9 @@ SETTINGS = {
     'deploy': {
         'hosts': {
             'vagrant': {
-                '1': {
-                    'public': '10.51.21.11',
-                    'private': '0.0.0.0',
-                    'components': ['test', 'nginx', 'app']
-                }
+                'public': '10.51.21.11',
+                'private': '0.0.0.0',
+                'components': ['test', 'nginx', 'app']
             }
         },
         'components': {

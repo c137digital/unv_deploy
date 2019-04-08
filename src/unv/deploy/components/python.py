@@ -1,7 +1,7 @@
 from unv.utils.tasks import register
 
 from ..tasks import DeployComponentTasksBase
-from ..settings import ComponentSettingsBase
+from ..helpers import ComponentSettingsBase
 
 
 class PythonComponentSettings(ComponentSettingsBase):
