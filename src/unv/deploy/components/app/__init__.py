@@ -1,9 +1,6 @@
-import pkg_resources
-
 from pathlib import Path
 
 from unv.utils.tasks import register
-from unv.app.settings import SETTINGS as APP_SETTINGS
 
 from ...tasks import DeployComponentTasksBase
 from ...helpers import ComponentSettingsBase
@@ -61,18 +58,24 @@ class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
         await self._create_user()
         await self._python.build()
 
-        await self.sync()
+    @register
+    async def shell(self):
+        return await self._python.shell()
+
+    @register
+    async def ssh(self):
+        return await self._run('bash', interactive=True)
 
     @register
     async def sync(self):
-        name = APP_SETTINGS['name']
-        app_pkg = pkg_resources.require(name)
-        version = app_pkg[0].version
+        name = await self._local('python setup.py --name')
+        version = await self._local('python setup.py --version')
         package = f'{name}-{version}.tar.gz'
 
+        await self._local('pip install -e .')
         await self._local('python setup.py sdist bdist_wheel')
         await self._upload(Path('dist', package))
         await self._python.pip(f'install -U {package}')
         await self._rmrf(Path(package))
         await self._upload(Path('secure'))
-        await self._setup_systemd_units()
+        await self._sync_systemd_units()

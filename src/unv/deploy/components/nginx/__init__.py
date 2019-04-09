@@ -150,4 +150,4 @@ class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
             await self._upload_template(
                 template, path, {'settings': self._settings})
             print(await self._run(f'cat {path}'))
-        await self._setup_systemd_units()
+        await self._sync_systemd_units()

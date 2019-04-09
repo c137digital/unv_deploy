@@ -84,12 +84,14 @@ class DeployTasksBase(TasksBase):
                 '--no-install-suggests {}'.format(' '.join(packages))
             )
 
-    async def _run(self, command, strip=True) -> str:
+    async def _run(self, command, strip=True, interactive=False) -> str:
         import time
         start = time.time()
+        interactive_flag = '-t' if interactive else ''
         response = await self._local(
-            f"ssh -p {self._port} {self._user}@{self._host} "
-            f"'{self._current_prefix}{command}'"
+            f"ssh {interactive_flag} -p {self._port} {self._user}@{self._host} "
+            f"'{self._current_prefix}{command}'",
+            interactive=interactive
         ) or ''
         if strip:
             response = response.strip()

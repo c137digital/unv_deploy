@@ -20,7 +20,7 @@ class SystemdTasksMixin:
                 yield service
 
     @as_root
-    async def _setup_systemd_units(self):
+    async def _sync_systemd_units(self):
         for service in self._systemd_services:
             service_path = Path('/etc', 'systemd', 'system', service['name'])
             context = {

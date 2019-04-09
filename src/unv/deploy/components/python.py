@@ -8,7 +8,7 @@ class PythonComponentSettings(ComponentSettingsBase):
     NAME = 'python'
     DEFAULT = {
         'root': 'python',
-        'version': '3.7.2',
+        'version': '3.7.3',
         'build': {
             'fast': True,
             'path': '/tmp/python'
@@ -39,6 +39,12 @@ class PythonComponentTasks(DeployComponentTasksBase):
 
     async def bin(self, command: str):
         return await self._run(str(self._settings.root_abs / 'bin' / command))
+
+    async def shell(self):
+        return await self._run(
+            str(self._settings.root_abs / 'bin' / 'python3'),
+            interactive=True
+        )
 
     @register
     async def build(self):
