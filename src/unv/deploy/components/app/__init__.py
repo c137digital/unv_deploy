@@ -68,8 +68,8 @@ class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
 
     @register
     async def sync(self):
-        name = await self._local('python setup.py --name')
-        version = await self._local('python setup.py --version')
+        name = (await self._local('python setup.py --name')).strip()
+        version = (await self._local('python setup.py --version')).strip()
         package = f'{name}-{version}.tar.gz'
 
         await self._local('pip install -e .')
