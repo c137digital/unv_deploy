@@ -29,7 +29,7 @@ class PythonComponentSettings(ComponentSettingsBase):
 
 
 class PythonComponentTasks(DeployComponentTasksBase):
-    SETTINGS = PythonComponentSettings(__file__)
+    SETTINGS = PythonComponentSettings()
 
     async def pip(self, command: str):
         return await self.bin(f'pip3 {command}')

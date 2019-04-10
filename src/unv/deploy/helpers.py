@@ -1,5 +1,6 @@
 import functools
 import copy
+import inspect
 
 from pathlib import Path
 
@@ -9,12 +10,15 @@ from .settings import SETTINGS
 
 
 class ComponentSettingsBase:
-    def __init__(self, root, settings=None):
+    NAME = ''
+
+    def __init__(self, settings=None, root=None):
         if settings is None:
             settings = SETTINGS['components'].get(self.__class__.NAME, {})
-        self.local_root = Path(root).parent
+        # TODO: add schema validation
         self._data = update_dict_recur(
             copy.deepcopy(self.__class__.DEFAULT), settings)
+        self.local_root = root or Path(inspect.getfile(self.__class__)).parent
 
     @property
     def user(self):

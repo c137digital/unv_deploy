@@ -24,7 +24,8 @@ setup(
     packages=find_packages('src'),
     include_package_data=True,
     install_requires=[
-        'jinja2'
+        'jinja2',
+
         'unv.app',
         'unv.utils',
     ],

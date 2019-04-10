@@ -33,7 +33,7 @@ class AppComponentSettings(ComponentSettingsBase):
     def python(self):
         settings = self._data.get('python', {})
         settings['user'] = self._data['user']
-        return PythonComponentSettings(__file__, settings)
+        return PythonComponentSettings(settings)
 
     @property
     def bin(self):
@@ -45,7 +45,7 @@ class AppComponentSettings(ComponentSettingsBase):
 
 
 class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
-    SETTINGS = AppComponentSettings(__file__)
+    SETTINGS = AppComponentSettings()
     NAMESPACE = 'app'
 
     def __init__(self, storage, user, host, port, settings=None):

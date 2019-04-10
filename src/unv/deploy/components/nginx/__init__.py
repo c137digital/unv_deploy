@@ -110,7 +110,7 @@ class NginxComponentSettings(ComponentSettingsBase):
 
 class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
     NAMESPACE = 'nginx'
-    SETTINGS = NginxComponentSettings(__file__)
+    SETTINGS = NginxComponentSettings()
 
     @register
     async def build(self):
