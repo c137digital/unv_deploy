@@ -1,4 +1,4 @@
-# Deploy helpers for fabric
+# Deploy tasks and helpers for application
 
 [![Build Status](https://readthedocs.org/projects/unv_deploy/badge/?version=latest&style=flat)](https://readthedocs.org/projects/unv_deploy)
 [![Docs Build Status](https://travis-ci.org/c137digital/unv_deploy.svg?branch=master)](https://travis-ci.org/c137digital/unv_deploy)

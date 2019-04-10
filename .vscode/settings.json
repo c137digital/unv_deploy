@@ -3,9 +3,6 @@
     "python.unitTest.nosetestsEnabled": false,
     "python.unitTest.unittestEnabled": false,
     "python.unitTest.pyTestEnabled": true,
-    "python.unitTest.pyTestArgs": [
-        "tests"
-    ],
     "python.linting.enabled": true,
     "python.linting.pylintEnabled": false,
     "python.linting.prospectorEnabled": true,
