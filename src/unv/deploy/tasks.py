@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import contextlib
 
 from pathlib import Path
@@ -27,6 +28,8 @@ class DeployTasksBase(TasksBase):
 
         self._original_user = user
         self._current_prefix = ''
+
+        self._logger = logging.getLogger(self.__class__.__name__)
 
     @contextlib.contextmanager
     def _prefix(self, command):
@@ -85,8 +88,10 @@ class DeployTasksBase(TasksBase):
             )
 
     async def _run(self, command, strip=True, interactive=False) -> str:
-        import time
-        start = time.time()
+        self._logger.debug(
+            f'run [{self._user}@{self._host}:{self._port}] '
+            f'{self._current_prefix}{command}'
+        )
         interactive_flag = '-t' if interactive else ''
         response = await self._local(
             f"ssh {interactive_flag} -p {self._port} {self._user}@{self._host} "
@@ -95,8 +100,6 @@ class DeployTasksBase(TasksBase):
         ) or ''
         if strip:
             response = response.strip()
-        end = time.time() - start
-        print(f'run {end} sec', self._host, command)
         return response
 
     async def _rmrf(self, path: Path):
