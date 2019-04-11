@@ -25,6 +25,12 @@ class ComponentSettingsBase:
         return self._data['user']
 
     @property
+    def enabled(self):
+        if 'enabled' in self._data:
+            return self._data['enabled']
+        return 'user' in self._data
+
+    @property
     def home(self):
         return Path('~')
 
