@@ -8,7 +8,7 @@ import jinja2
 
 from unv.utils.tasks import TasksBase, TasksManager, TaskRunError
 
-from .helpers import filter_hosts, as_root
+from .helpers import get_hosts, as_root
 from .settings import SETTINGS
 from .helpers import ComponentSettingsBase
 
@@ -184,6 +184,6 @@ class DeployTasksManager(TasksManager):
             SETTINGS['components'][name]['user'],
             [
                 {'ip': host_['public'], 'port': host_.get('ssh', 22)}
-                for name, host_ in filter_hosts(name)
+                for name, host_ in get_hosts(name)
             ]
         )

@@ -71,7 +71,7 @@ def as_root(func):
     return as_user('root', func)
 
 
-def filter_hosts(component=''):
+def get_hosts(component=''):
     for key, value in SETTINGS['hosts'].items():
         if component in value.get('components', []) or not component:
             yield key, value
