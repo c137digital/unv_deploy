@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User={{ settings.user }}
 Group={{ settings.user }}
-ExecStart={{ settings.bin.format(instance=instance, settings=settings) }}
+ExecStart={{ settings.bin.format(user=user, public_ip=public_ip, private_ip=private_ip, settings=settings, instance=instance) }}
 WorkingDirectory={{ settings.home_abs }}
 LimitNOFILE={{ limit_nofile }}
 

@@ -25,7 +25,10 @@ class SystemdTasksMixin:
             service_path = Path('/etc', 'systemd', 'system', service['name'])
             context = {
                 'instance': service['instance'],
-                'settings': self._settings
+                'settings': self._settings,
+                'public_ip': self._pr_ip,
+                'private_ip': self._private_ip,
+                'user': self._user
             }.copy()
             context.update(service.get('context', {}))
             path = service['template']

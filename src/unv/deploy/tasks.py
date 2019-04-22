@@ -19,11 +19,12 @@ def parallel(task):
 
 
 class DeployTasksBase(TasksBase):
-    def __init__(self, storage, user, host, port):
+    def __init__(self, storage, user, public_ip, private_ip, port):
         self._storage = storage
 
         self._user = user
-        self._host = host
+        self._public_ip = public_ip
+        self._private_ip = private_ip
         self._port = port
 
         self._original_user = user
@@ -89,12 +90,13 @@ class DeployTasksBase(TasksBase):
 
     async def _run(self, command, strip=True, interactive=False) -> str:
         self._logger.debug(
-            f'run [{self._user}@{self._host}:{self._port}] '
+            f'run [{self._user}@{self._public_ip}:{self._port}] '
             f'{self._current_prefix}{command}'
         )
         interactive_flag = '-t' if interactive else ''
         response = await self._local(
-            f"ssh {interactive_flag} -p {self._port} {self._user}@{self._host} "
+            f"ssh {interactive_flag} -p {self._port} "
+            f"{self._user}@{self._public_ip} "
             f"'{self._current_prefix}{command}'",
             interactive=interactive
         ) or ''
@@ -113,7 +115,7 @@ class DeployTasksBase(TasksBase):
     async def _upload(self, local_path: Path, path: Path = '~/'):
         await self._local(
             f'scp -r -P {self._port} {local_path} '
-            f'{self._user}@{self._host}:{path}'
+            f'{self._user}@{self._public_ip}:{path}'
         )
 
     async def _upload_template(
@@ -143,8 +145,9 @@ class DeployTasksBase(TasksBase):
 class DeployComponentTasksBase(DeployTasksBase):
     SETTINGS = None
 
-    def __init__(self, storage, user, host, port, settings=None):
-        super().__init__(storage, user, host, port)
+    def __init__(
+            self, storage, user, public_ip, private_ip, port, settings=None):
+        super().__init__(storage, user, public_ip, private_ip, port)
         settings = settings or self.__class__.SETTINGS
 
         if settings is None or not isinstance(settings, ComponentSettingsBase):
@@ -163,9 +166,9 @@ class DeployTasksManager(TasksManager):
             parallel = hasattr(method, '__parallel__')
             tasks = [
                 getattr(task_class(
-                    self.storage, user, host['ip'], host['port']),
-                    name
-                )(*args)
+                    self.storage, user, host['public'], host['private'],
+                    host.get('ssh', 22), name
+                ))(*args)
                 for host in hosts
             ]
 
@@ -182,8 +185,5 @@ class DeployTasksManager(TasksManager):
     def _select_hosts(self, name: str = ''):
         return (
             SETTINGS['components'][name]['user'],
-            [
-                {'ip': host_['public'], 'port': host_.get('ssh', 22)}
-                for name, host_ in get_hosts(name)
-            ]
+            [host for _, host in get_hosts(name)]
         )
