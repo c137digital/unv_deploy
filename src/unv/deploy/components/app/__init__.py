@@ -48,10 +48,12 @@ class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
     SETTINGS = AppComponentSettings()
     NAMESPACE = 'app'
 
-    def __init__(self, storage, user, host, port, settings=None):
-        super().__init__(storage, user, host, port)
+    def __init__(
+            self, storage, user, public_ip, private_ip, port, settings=None):
+        super().__init__(
+            storage, user, public_ip, private_ip, port, settings)
         self._python = PythonComponentTasks(
-            storage, user, host, port, self._settings.python)
+            storage, user, public_ip, private_ip, port, self._settings.python)
 
     @register
     async def build(self):
