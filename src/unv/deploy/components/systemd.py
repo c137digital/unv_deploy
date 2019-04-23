@@ -26,7 +26,7 @@ class SystemdTasksMixin:
             context = {
                 'instance': service['instance'],
                 'settings': self._settings,
-                'public_ip': self._pr_ip,
+                'public_ip': self._public_ip,
                 'private_ip': self._private_ip,
                 'user': self._user
             }.copy()
