@@ -51,9 +51,7 @@ class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
     def __init__(
             self, storage, user, public_ip, private_ip, port, settings=None):
         super().__init__(
-            storage, user, public_ip, private_ip, port,
-            settings or self.__class__.SETTINGS
-        )
+            storage, user, public_ip, private_ip, port, settings)
         self._python = PythonComponentTasks(
             storage, user, public_ip, private_ip, port, self._settings.python)
 

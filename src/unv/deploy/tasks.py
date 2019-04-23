@@ -153,7 +153,9 @@ class DeployComponentTasksBase(DeployTasksBase):
         if settings is None or not isinstance(settings, ComponentSettingsBase):
             raise ValueError(
                 "Provide correct 'SETTINGS' value "
-                "shoult be an instance of class 'ComponentSettingsBase'")
+                "shoult be an instance of class 'ComponentSettingsBase' not "
+                f"[{settings}] value and type {type(settings)}"
+            )
 
         self._settings = settings
 
@@ -167,8 +169,8 @@ class DeployTasksManager(TasksManager):
             tasks = [
                 getattr(task_class(
                     self.storage, user, host['public'], host['private'],
-                    host.get('ssh', 22), name
-                ))(*args)
+                    host.get('ssh', 22)
+                ), name)(*args)
                 for host in hosts
             ]
 
