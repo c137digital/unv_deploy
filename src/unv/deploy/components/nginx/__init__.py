@@ -12,24 +12,22 @@ class NginxComponentSettings(ComponentSettingsBase):
     NAME = 'nginx'
     DEFAULT = {
         'systemd': {
-            'services': {
-                'server.service': {
-                    'name': 'nginx.service',
-                    'boot': True,
-                    'instances': 1
-                }
-            }
+            'template': 'server.service',
+            'name': 'nginx.service',
+            'boot': True,
+            'instances': 1
         },
         'master': True,
         'root': 'app',
         'packages': {
-            'nginx': 'http://nginx.org/download/nginx-1.15.10.tar.gz',
+            'nginx': 'http://nginx.org/download/nginx-1.16.0.tar.gz',
             'pcre': 'https://ftp.pcre.org/pub/pcre/pcre-8.42.tar.gz',
             'zlib': 'http://www.zlib.net/zlib-1.2.11.tar.gz',
             'openssl': 'https://www.openssl.org/source/openssl-1.1.1a.tar.gz'
         },
-        'configs': {
-            'server.conf': 'conf/nginx.conf'
+        'config': {
+            'template': 'server.conf',
+            'name': 'nginx.conf'
         },
         'connections': 1000,
         'workers': 1,
@@ -53,11 +51,12 @@ class NginxComponentSettings(ComponentSettingsBase):
         return self._data['packages']
 
     @property
-    def configs(self):
-        for template, path in self._data['configs'].items():
-            if not template.startswith('/'):
-                template = (self.local_root / template).resolve()
-            yield Path(template), self.root / path
+    def config(self):
+        config = self._data['config']
+        template, name = config['template'], config['name']
+        if not template.startswith('/'):
+            template = (self.local_root / template).resolve()
+        return Path(template), self.root / 'conf' / name
 
     @property
     def include(self):
@@ -146,8 +145,8 @@ class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
 
     @register
     async def sync(self):
-        for template, path in self._settings.configs:
-            await self._upload_template(
-                template, path, {'settings': self._settings})
-            print(await self._run(f'cat {path}'))
+        template, path = self.config
+        await self._upload_template(
+            template, path, {'settings': self._settings})
+        print(await self._run(f'cat {path}'))
         await self._sync_systemd_units()

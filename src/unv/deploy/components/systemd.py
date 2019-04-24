@@ -9,15 +9,13 @@ class SystemdTasksMixin:
     @property
     def _systemd_services(self):
         systemd = self._settings.systemd
-        for template, original in systemd['services'].items():
-            name = original.get('name', template)
-            instances = original.get('instances', 1)
-            for instance in range(1, instances + 1):
-                service = original.copy()
-                service['name'] = name.format(instance=instance)
-                service['instance'] = instance
-                service['template'] = template
-                yield service
+        name = systemd['name']
+        instances = systemd['instances']
+        for instance in range(1, instances + 1):
+            service = systemd.copy()
+            service['name'] = name.format(instance=instance)
+            service['instance'] = instance
+            yield service
 
     @as_root
     async def _sync_systemd_units(self):
@@ -70,5 +68,4 @@ class SystemdTasksMixin:
     async def status(self):
         results = await self._systemctl('status')
         for service, result in results.items():
-            print(f'Service: [{service}] ->')
             print(result)

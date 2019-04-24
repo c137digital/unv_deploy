@@ -15,16 +15,13 @@ class AppComponentSettings(ComponentSettingsBase):
         'bin': 'app {instance}',
         'settings': 'secure.production',
         'systemd': {
-            'services': {
-                'app.service': {
-                    'name': 'app_{instance}.service',
-                    'boot': True,
-                    'instances': 1,
-                    'context': {
-                        'limit_nofile': 2000,
-                        'description': "Application description",
-                    }
-                }
+            'template': 'app.service',
+            'name': 'app_{instance}.service',
+            'boot': True,
+            'instances': 1,
+            'context': {
+                'limit_nofile': 2000,
+                'description': "Application description",
             }
         }
     }
