@@ -14,11 +14,14 @@ SETTINGS = {
         'components': {
             'app': {
                 'user': 'app',
+                'systemd': {
+                    'instances': {'count': 0, 'cpu_count_percent': 50}
+                }
             },
             'nginx': {
                 'user': 'nginx',
                 'configs': {
-                    TEST_NGINX_CONFIG: 'conf/apps/test.conf'
+                    TEST_NGINX_CONFIG: 'apps/test.conf'
                 }
             },
             'test': {

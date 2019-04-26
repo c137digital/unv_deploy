@@ -19,17 +19,12 @@ def parallel(task):
 
 
 class DeployTasksBase(TasksBase):
-    def __init__(self, storage, user, public_ip, private_ip, port):
-        self._storage = storage
-
-        self._user = user
-        self._public_ip = public_ip
-        self._private_ip = private_ip
-        self._port = port
-
-        self._original_user = user
+    def __init__(self, user, host):
+        self._user = self._original_user = user
+        self._public_ip = host['public']
+        self._private_ip = host['private']
+        self._port = host.get('ssh', 22)
         self._current_prefix = ''
-
         self._logger = logging.getLogger(self.__class__.__name__)
 
     @contextlib.contextmanager
@@ -145,9 +140,8 @@ class DeployTasksBase(TasksBase):
 class DeployComponentTasksBase(DeployTasksBase):
     SETTINGS = None
 
-    def __init__(
-            self, storage, user, public_ip, private_ip, port, settings=None):
-        super().__init__(storage, user, public_ip, private_ip, port)
+    def __init__(self, user, host, settings=None):
+        super().__init__(user, host)
         settings = settings or self.__class__.SETTINGS
 
         if settings is None or not isinstance(settings, ComponentSettingsBase):
@@ -167,10 +161,7 @@ class DeployTasksManager(TasksManager):
             user, hosts = self._select_hosts(task_class.NAMESPACE)
             parallel = hasattr(method, '__parallel__')
             tasks = [
-                getattr(task_class(
-                    self.storage, user, host['public'], host['private'],
-                    host.get('ssh', 22)
-                ), name)(*args)
+                getattr(task_class(user, host), name)(*args)
                 for host in hosts
             ]
 

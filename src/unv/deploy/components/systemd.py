@@ -6,12 +6,20 @@ from ..helpers import as_root
 
 
 class SystemdTasksMixin:
-    @property
-    def _systemd_services(self):
+    async def _get_systemd_services(self):
         systemd = self._settings.systemd
         name = systemd['name']
         instances = systemd['instances']
-        for instance in range(1, instances + 1):
+        cpu_count_percent = instances.get('cpu_count_percent', 0)
+        count = instances.get('count', 0)
+        if cpu_count_percent:
+            cpu_cores = int(await self._run('nproc --all'))
+            cpu_cores = int(cpu_cores / 100.0 * cpu_count_percent)
+            cpu_cores += count
+            count = cpu_cores
+
+        count = count or 1
+        for instance in range(1, count + 1):
             service = systemd.copy()
             service['name'] = name.format(instance=instance)
             service['instance'] = instance
@@ -19,7 +27,8 @@ class SystemdTasksMixin:
 
     @as_root
     async def _sync_systemd_units(self):
-        for service in self._systemd_services:
+        services = [service async for service in self._get_systemd_services()]
+        for service in services:
             service_path = Path('/etc', 'systemd', 'system', service['name'])
             context = {
                 'instance': service['instance'],
@@ -38,13 +47,13 @@ class SystemdTasksMixin:
 
         await self._run('systemctl daemon-reload')
 
-        for service in self._systemd_services:
+        for service in services:
             if service['boot']:
                 await self._run(f'systemctl enable {service["name"]}')
 
     async def _systemctl(self, command: str, display=False):
         results = {}
-        for service in self._systemd_services:
+        async for service in self._get_systemd_services():
             if 'manage' in service and not service['manage']:
                 continue
 

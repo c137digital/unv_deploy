@@ -15,7 +15,7 @@ class NginxComponentSettings(ComponentSettingsBase):
             'template': 'server.service',
             'name': 'nginx.service',
             'boot': True,
-            'instances': 1
+            'instances': {'count': 1}
         },
         'master': True,
         'root': 'app',
@@ -25,10 +25,7 @@ class NginxComponentSettings(ComponentSettingsBase):
             'zlib': 'http://www.zlib.net/zlib-1.2.11.tar.gz',
             'openssl': 'https://www.openssl.org/source/openssl-1.1.1a.tar.gz'
         },
-        'config': {
-            'template': 'server.conf',
-            'name': 'nginx.conf'
-        },
+        'configs': {'server.conf': 'nginx.conf'},
         'connections': 1000,
         'workers': 1,
         'aio': 'on',
@@ -51,12 +48,11 @@ class NginxComponentSettings(ComponentSettingsBase):
         return self._data['packages']
 
     @property
-    def config(self):
-        config = self._data['config']
-        template, name = config['template'], config['name']
-        if not template.startswith('/'):
-            template = (self.local_root / template).resolve()
-        return Path(template), self.root / 'conf' / name
+    def configs(self):
+        for template, name in self._data['configs'].items():
+            if not template.startswith('/'):
+                template = (self.local_root / template).resolve()
+            yield Path(template), self.root / 'conf' / name
 
     @property
     def include(self):
@@ -145,8 +141,8 @@ class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
 
     @register
     async def sync(self):
-        template, path = self.config
-        await self._upload_template(
-            template, path, {'settings': self._settings})
-        print(await self._run(f'cat {path}'))
+        for template, path in self._settings.configs:
+            await self._upload_template(
+                template, path, {'settings': self._settings})
+            print(await self._run(f'cat {path}'))
         await self._sync_systemd_units()

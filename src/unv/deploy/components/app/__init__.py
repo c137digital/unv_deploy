@@ -18,7 +18,7 @@ class AppComponentSettings(ComponentSettingsBase):
             'template': 'app.service',
             'name': 'app_{instance}.service',
             'boot': True,
-            'instances': 1,
+            'instances': {'count': 1},
             'context': {
                 'limit_nofile': 2000,
                 'description': "Application description",
@@ -45,12 +45,9 @@ class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
     SETTINGS = AppComponentSettings()
     NAMESPACE = 'app'
 
-    def __init__(
-            self, storage, user, public_ip, private_ip, port, settings=None):
-        super().__init__(
-            storage, user, public_ip, private_ip, port, settings)
-        self._python = PythonComponentTasks(
-            storage, user, public_ip, private_ip, port, self._settings.python)
+    def __init__(self, user, host, settings=None):
+        super().__init__(user, host, settings)
+        self._python = PythonComponentTasks(user, host, self._settings.python)
 
     @register
     async def build(self):
