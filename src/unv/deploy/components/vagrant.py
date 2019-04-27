@@ -1,18 +1,12 @@
-import copy
-
-from pathlib import Path
-
 from unv.utils.os import get_homepath
 from unv.utils.tasks import register
-from unv.utils.collections import update_dict_recur
-
-# from unv.web.settings import SETTINGS as WEB_SETTINGS
 
 from .helpers import get_hosts
 from .tasks import DeployTasksBase
 
 
 class VagrantTasks(DeployTasksBase):
+    @register
     async def setup(self):
         await self._local('vagrant destroy -f')
         await self._local('vagrant up')
