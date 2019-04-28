@@ -6,9 +6,8 @@ from ..helpers import as_root
 
 
 class SystemdTasksMixin:
-    async def _get_systemd_services(self):
+    async def _get_systemd_instances_count(self):
         systemd = self._settings.systemd
-        name = systemd['name']
         instances = systemd['instances']
         cpu_count_percent = instances.get('cpu_count_percent', 0)
         count = instances.get('count', 0)
@@ -18,7 +17,12 @@ class SystemdTasksMixin:
             cpu_cores += count
             count = cpu_cores
 
-        count = count or 1
+        return count or 1
+
+    async def _get_systemd_services(self):
+        systemd = self._settings.systemd
+        name = systemd['name']
+        count = await self._get_systemd_instances_count()
         for instance in range(1, count + 1):
             service = systemd.copy()
             service['name'] = name.format(instance=instance)
