@@ -5,6 +5,7 @@ from unv.utils.tasks import register
 from unv.deploy.tasks import DeployTasksBase, DeployTasksManager, parallel
 from unv.deploy.components.nginx import NginxComponentTasks
 from unv.deploy.components.app import AppComponentTasks
+from unv.deploy.components.vagrant import VagrantTasks
 
 
 # class AppTasks(DeployTasksBase):
@@ -47,4 +48,5 @@ if __name__ == '__main__':
     manager = DeployTasksManager()
     manager.register(AppComponentTasks)
     manager.register(NginxComponentTasks)
+    manager.register(VagrantTasks)
     manager.run(' '.join(sys.argv[1:]))

@@ -1,11 +1,12 @@
 from unv.utils.os import get_homepath
-from unv.utils.tasks import register
+from unv.utils.tasks import register, TasksBase
 
-from .helpers import get_hosts
-from .tasks import DeployTasksBase
+from ..helpers import get_hosts
 
 
-class VagrantTasks(DeployTasksBase):
+class VagrantTasks(TasksBase):
+    NAMESPACE = 'vagrant'
+
     @register
     async def setup(self):
         await self._local('vagrant destroy -f')

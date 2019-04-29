@@ -28,6 +28,23 @@ class DeployTasksBase(TasksBase):
         self._logger = logging.getLogger(self.__class__.__name__)
 
     @contextlib.contextmanager
+    def _set_user(self, user):
+        old_user = self._user
+        self._user = user
+        yield self
+        self._user = old_user
+
+    @contextlib.contextmanager
+    def _set_host(self, host):
+        old_public_ip, old_private_ip, old_port =\
+            self._public_ip, self._private_ip, self._port
+        self._public_ip, self._private_ip, self._port =\
+            host['public'], host['private'], host.get('ssh', 22)
+        yield self
+        self._public_ip, self._private_ip, self._port =\
+            old_public_ip, old_private_ip, old_port
+
+    @contextlib.contextmanager
     def _prefix(self, command):
         old_prefix = self._current_prefix
         self._current_prefix = f'{self._current_prefix} {command} '

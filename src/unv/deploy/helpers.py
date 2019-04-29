@@ -57,11 +57,8 @@ def as_user(user, func=None):
     def decorator(func):
         @functools.wraps(func)
         async def wrapper(self, *args, **kwargs):
-            old_user = self._user
-            self._user = user
-            result = await func(self, *args, **kwargs)
-            self._user = old_user
-            return result
+            with self._set_user(user):
+                return await func(self, *args, **kwargs)
         return wrapper
 
     return decorator if func is None else decorator(func)

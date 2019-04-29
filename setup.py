@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='unv.deploy',
-    version='0.2.12',
+    version='0.2.13',
     description="""Deploy helpers for UNV framework""",
     url='http://github.com/c137digital/unv_deploy',
     author='Morty Space',
@@ -24,10 +24,9 @@ setup(
     packages=find_packages('src'),
     include_package_data=True,
     install_requires=[
-        'jinja2',
-
         'unv.app',
         'unv.utils',
+        'jinja2',
     ],
     zip_safe=True
 )
