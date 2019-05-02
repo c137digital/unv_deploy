@@ -194,6 +194,6 @@ class DeployTasksManager(TasksManager):
 
     def _select_hosts(self, name: str = ''):
         return (
-            SETTINGS['components'][name]['user'],
+            SETTINGS['components'].get(name, {}).get('user', name),
             [host for _, host in get_hosts(name)]
         )

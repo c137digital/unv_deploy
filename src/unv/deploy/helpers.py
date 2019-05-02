@@ -10,8 +10,6 @@ from .settings import SETTINGS
 
 
 class ComponentSettingsBase:
-    NAME = ''
-
     def __init__(self, settings=None, root=None):
         if settings is None:
             settings = SETTINGS['components'].get(self.__class__.NAME, {})
@@ -22,7 +20,7 @@ class ComponentSettingsBase:
 
     @property
     def user(self):
-        return self._data['user']
+        return self._data.get('user', self.__class__.NAME)
 
     @property
     def enabled(self):
