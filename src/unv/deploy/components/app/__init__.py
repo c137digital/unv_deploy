@@ -29,7 +29,7 @@ class AppComponentSettings(ComponentSettingsBase):
     @property
     def python(self):
         settings = self._data.get('python', {})
-        settings['user'] = self._data['user']
+        settings['user'] = self.user
         return PythonComponentSettings(settings)
 
     @property
