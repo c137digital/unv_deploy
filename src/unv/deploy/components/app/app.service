@@ -6,12 +6,13 @@ After=network.target
 Type=simple
 User={{ settings.user }}
 Group={{ settings.user }}
-ExecStart={{ settings.bin.format(user=user, public_ip=public_ip, private_ip=private_ip, settings=settings, instance=instance) }}
+ExecStart={{ settings.bin }}
 WorkingDirectory={{ settings.home_abs }}
 LimitNOFILE={{ limit_nofile }}
 
 Environment=PYTHONPATH={{ settings.home_abs }}
 Environment=SETTINGS={{ settings.module }}
+Environment=SETTINGS_DEPLOY_APP_INSTANCE={{ instance }}
 
 [Install]
 WantedBy=multi-user.target

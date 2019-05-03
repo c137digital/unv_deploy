@@ -12,7 +12,8 @@ from ..systemd import SystemdTasksMixin
 class AppComponentSettings(ComponentSettingsBase):
     NAME = 'app'
     DEFAULT = {
-        'bin': 'app {instance}',
+        'bin': 'app',
+        'instance': 1,
         'settings': 'secure.production',
         'systemd': {
             'template': 'app.service',
@@ -39,6 +40,10 @@ class AppComponentSettings(ComponentSettingsBase):
     @property
     def module(self):
         return self._data['settings']
+
+    @property
+    def instance(self):
+        return self._data['instance']
 
 
 class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
