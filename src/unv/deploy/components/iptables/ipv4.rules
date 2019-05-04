@@ -1,0 +1,41 @@
+# start filters
+*filter
+
+-A INPUT -i lo -j ACCEPT
+-A INPUT ! -i lo -d 127.0.0.0/8 -j REJECT
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+-A OUTPUT -j ACCEPT
+
+# open component ports
+{% if 'redis' in components %}
+# accept from app ips
+{% for _, host in get_hosts('app') %}
+-A INPUT -p tcp -s {{ host['private'] }} --dport {{ settings['redis'].port }} -j ACCEPT
+{% endfor %}
+{% endif %}
+
+{% if 'nginx' in components %}
+# accept for http and https
+-A INPUT -p tcp --dport 80 -j ACCEPT
+-A INPUT -p tcp --dport 443 -j ACCEPT
+{% endif %}
+
+{% if 'app' in components %}
+# accept from nginx connections
+{% for _, host in get_hosts('nginx') %}
+{% for server in upstream_servers %}
+-A INPUT -p tcp -s {{ host['private'] }} --dport {{ server['port'] }} -j ACCEPT
+{% endfor %}
+{% endfor %}
+{% endif %}
+# end open ports
+
+# ssh
+-A INPUT -p tcp -m state --state NEW --dport 22 -j ACCEPT
+-A INPUT -p icmp -m icmp --icmp-type 8 -j ACCEPT
+
+-A INPUT -j REJECT
+-A FORWARD -j REJECT
+
+COMMIT
+# end filters [need for correct read of file]

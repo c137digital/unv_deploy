@@ -18,6 +18,11 @@ def parallel(task):
     return task
 
 
+def local(task):
+    task.__local__ = True
+    return task
+
+
 class DeployTasksBase(TasksBase):
     def __init__(self, user, host):
         self._user = self._original_user = user
@@ -173,16 +178,21 @@ class DeployComponentTasksBase(DeployTasksBase):
 
 class DeployTasksManager(TasksManager):
     def run_task(self, task_class, name, args):
-        if issubclass(task_class, DeployTasksBase):
-            method = getattr(task_class, name)
-            user, hosts = self._select_hosts(task_class.NAMESPACE)
-            parallel = hasattr(method, '__parallel__')
-            tasks = [
-                getattr(task_class(user, host), name)(*args)
-                for host in hosts
-            ]
+        method = getattr(task_class, name)
+        is_local = hasattr(method, '__local__')
+        is_parallel = hasattr(method, '__parallel__')
 
-            if parallel:
+        if issubclass(task_class, DeployTasksBase) and not is_local:
+            if is_local:
+                tasks = [getattr(task_class(None, None), name)(*args)]
+            else:
+                user, hosts = self._select_hosts(task_class.NAMESPACE)
+                tasks = [
+                    getattr(task_class(user, host), name)(*args)
+                    for host in hosts
+                ]
+
+            if is_parallel:
                 async def run():
                     await asyncio.gather(*tasks)
                 asyncio.run(run())

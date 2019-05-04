@@ -27,6 +27,7 @@ setup(
         'unv.app',
         'unv.utils',
         'jinja2',
+        'watchgod'
     ],
     zip_safe=True
 )

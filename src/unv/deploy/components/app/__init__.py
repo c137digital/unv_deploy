@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from unv.utils.tasks import register
+from watchgod import awatch
 
-from ...tasks import DeployComponentTasksBase
+from ...tasks import DeployComponentTasksBase, local, register
 from ...helpers import ComponentSettingsBase
 
 from ..python import PythonComponentTasks, PythonComponentSettings
@@ -53,6 +53,15 @@ class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
     def __init__(self, user, host, settings=None):
         super().__init__(user, host, settings)
         self._python = PythonComponentTasks(user, host, self._settings.python)
+
+    @register
+    @local
+    async def watch(self):
+        # watch local project files (how to determine?)
+        async for changes in awatch('.'):
+            print(changes)
+        # rsync on all app hosts files
+        # restart instances
 
     @register
     async def build(self):
