@@ -79,7 +79,7 @@ class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
                         if not sub_dir.is_dir():
                             continue
                         await self._rsync(
-                            sub_dir, site_packages_abs / sub_dir.parent,
+                            sub_dir, site_packages_abs / sub_dir.name,
                             self._settings.watch_exclude
                         )
                     await self.restart()
