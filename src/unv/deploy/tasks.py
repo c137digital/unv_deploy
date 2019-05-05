@@ -141,7 +141,7 @@ class DeployTasksBase(TasksBase):
         exclude = [f"--exclude '{path}'" for path in exclude or []]
         exclude = ' '.join(exclude)
         await self._local(
-            f'rsync -rave ssh --delete {exclude} {local_dir} '
+            f'rsync -rave ssh --delete {exclude} {local_dir}/ '
             f'{self._user}@{self._public_ip}:{root_dir}'
         )
 
