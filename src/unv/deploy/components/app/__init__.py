@@ -3,7 +3,7 @@ from pathlib import Path
 from watchgod import awatch
 
 from ...tasks import DeployComponentTasksBase, local, register
-from ...helpers import ComponentSettingsBase
+from ...helpers import ComponentSettingsBase, get_hosts
 
 from ..python import PythonComponentTasks, PythonComponentSettings
 from ..systemd import SystemdTasksMixin
@@ -24,6 +24,10 @@ class AppComponentSettings(ComponentSettingsBase):
                 'limit_nofile': 2000,
                 'description': "Application description",
             }
+        },
+        'watch': {
+            'dir': './src',
+            'exclude': ['__pycache__']
         }
     }
 
@@ -45,6 +49,14 @@ class AppComponentSettings(ComponentSettingsBase):
     def instance(self):
         return self._data['instance']
 
+    @property
+    def watch_dir(self):
+        return Path(self._data['watch']['dir'])
+
+    @property
+    def watch_exclude(self):
+        return self._data['watch']['exclude']
+
 
 class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
     SETTINGS = AppComponentSettings()
@@ -57,11 +69,16 @@ class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
     @register
     @local
     async def watch(self):
-        # watch local project files (how to determine?)
-        async for changes in awatch('.'):
-            print(changes)
-        # rsync on all app hosts files
-        # restart instances
+        directory = self._settings.watch_dir
+        async for _ in awatch(directory):
+            for _, host in get_hosts(self.NAMESPACE):
+                with self._set_user(self._settings.user), self._set_host(host):
+                    await self._rsync(
+                        directory,
+                        self._settings.python.site_packages_abs,
+                        self._settings.watch_exclude
+                    )
+                    await self.restart()
 
     @register
     async def build(self):
@@ -71,10 +88,6 @@ class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
     @register
     async def shell(self):
         return await self._python.shell()
-
-    @register
-    async def ssh(self):
-        return await self._run('bash', interactive=True)
 
     @register
     async def sync(self):

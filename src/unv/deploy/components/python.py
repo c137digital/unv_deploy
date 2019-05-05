@@ -27,6 +27,13 @@ class PythonComponentSettings(ComponentSettingsBase):
     def build_path(self):
         return self._data['build']['path']
 
+    @property
+    def site_packages_abs(self):
+        return (
+            self.root_abs / 'lib' /
+            f'python{self.version[:3]}' / 'site-packages'
+        )
+
 
 class PythonComponentTasks(DeployComponentTasksBase):
     SETTINGS = PythonComponentSettings()

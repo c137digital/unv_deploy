@@ -17,6 +17,7 @@
         "**/.pytest_cache": true,
         ".coverage": true,
         "cov.xml": true,
+        "**/*.egg-info": true
     },
     "files.watcherExclude": {
         "**/.git/**": true,

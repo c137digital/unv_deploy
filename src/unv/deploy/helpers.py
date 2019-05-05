@@ -26,7 +26,9 @@ class ComponentSettingsBase:
     def enabled(self):
         if 'enabled' in self._data:
             return self._data['enabled']
-        return 'user' in self._data
+        for _, host in get_hosts():
+            if self.__class__.NAME in host['components']:
+                return True
 
     @property
     def home(self):

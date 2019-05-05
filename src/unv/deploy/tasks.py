@@ -6,7 +6,7 @@ from pathlib import Path
 
 import jinja2
 
-from unv.utils.tasks import TasksBase, TasksManager, TaskRunError
+from unv.utils.tasks import TasksBase, TasksManager, TaskRunError, register
 
 from .helpers import get_hosts, as_root
 from .settings import SETTINGS
@@ -25,7 +25,7 @@ def local(task):
 
 class DeployTasksBase(TasksBase):
     def __init__(self, user, host):
-        self._user = self._original_user = user
+        self._user = user
         self._public_ip = host['public']
         self._private_ip = host['private']
         self._port = host.get('ssh', 22)
@@ -70,30 +70,32 @@ class DeployTasksBase(TasksBase):
         """Run command on server as root user."""
         return await self._run(command, strip)
 
-    @as_root
     async def _create_user(self):
         """Create user if not exist and sync ssh keys."""
-        try:
-            await self._run("id -u {}".format(self._original_user))
-        except TaskRunError:
-            await self._run(
-                "adduser --quiet --disabled-password"
-                " --gecos \"{0}\" {0}".format(self._original_user)
-            )
+        user = self._user
 
-            local_ssh_public_key = Path('~/.ssh/id_rsa.pub')
-            local_ssh_public_key = local_ssh_public_key.expanduser()
-            keys_path = Path(
-                '/', 'home' if self._original_user != 'root' else '',
-                self._original_user, '.ssh'
-            )
+        with self._set_user('root'):
+            try:
+                await self._run("id -u {}".format(user))
+            except TaskRunError:
+                await self._run(
+                    "adduser --quiet --disabled-password"
+                    " --gecos \"{0}\" {0}".format(user)
+                )
 
-            await self._mkdir(keys_path)
-            await self._run(f'chown -hR {self._original_user} {keys_path}')
-            await self._run('echo "{}" >> {}'.format(
-                local_ssh_public_key.read_text().strip(),
-                keys_path / 'authorized_keys'
-            ))
+                local_ssh_public_key = Path('~/.ssh/id_rsa.pub')
+                local_ssh_public_key = local_ssh_public_key.expanduser()
+                keys_path = Path(
+                    '/', 'home' if user != 'root' else '',
+                    user, '.ssh'
+                )
+
+                await self._mkdir(keys_path)
+                await self._run(f'chown -hR {user} {keys_path}')
+                await self._run('echo "{}" >> {}'.format(
+                    local_ssh_public_key.read_text().strip(),
+                    keys_path / 'authorized_keys'
+                ))
 
     @as_root
     async def _apt_install(self, *packages):
@@ -135,6 +137,14 @@ class DeployTasksBase(TasksBase):
             f'{self._user}@{self._public_ip}:{path}'
         )
 
+    async def _rsync(self, local_dir, root_dir, exclude=None):
+        exclude = [f"--exclude '{path}'" for path in exclude or []]
+        exclude = ' '.join(exclude)
+        await self._local(
+            f'rsync -rave ssh --delete {exclude} {local_dir} '
+            f'{self._user}@{self._public_ip}:{root_dir}'
+        )
+
     async def _upload_template(
             self, local_path: Path, path: Path, context: dict = None):
         context = context or {}
@@ -157,6 +167,10 @@ class DeployTasksBase(TasksBase):
 
         await self._rmrf(archive)
         await self._rmrf(archive_dir)
+
+    @register
+    async def ssh(self):
+        return await self._run('bash', interactive=True)
 
 
 class DeployComponentTasksBase(DeployTasksBase):
@@ -182,15 +196,17 @@ class DeployTasksManager(TasksManager):
         is_local = hasattr(method, '__local__')
         is_parallel = hasattr(method, '__parallel__')
 
-        if issubclass(task_class, DeployTasksBase) and not is_local:
+        if issubclass(task_class, DeployTasksBase):
             if is_local:
-                tasks = [getattr(task_class(None, None), name)(*args)]
+                user = 'local'
+                hosts = [{'public': None, 'private': None, 'ssh': 0}]
             else:
                 user, hosts = self._select_hosts(task_class.NAMESPACE)
-                tasks = [
-                    getattr(task_class(user, host), name)(*args)
-                    for host in hosts
-                ]
+
+            tasks = [
+                getattr(task_class(user, host), name)(*args)
+                for host in hosts
+            ]
 
             if is_parallel:
                 async def run():
