@@ -47,7 +47,6 @@ class SystemdTasksMixin:
                 path = (self._settings.local_root / service['template'])
                 path = path.resolve()
             await self._upload_template(path, service_path, context)
-            print(await self._run(f"cat {service_path}"))
 
         await self._run('systemctl daemon-reload')
 
