@@ -73,11 +73,14 @@ class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
         async for _ in awatch(directory):
             for _, host in get_hosts(self.NAMESPACE):
                 with self._set_user(self._settings.user), self._set_host(host):
-                    await self._rsync(
-                        directory,
-                        self._settings.python.site_packages_abs,
-                        self._settings.watch_exclude
-                    )
+                    for sub_dir in directory.iterdir():
+                        if not sub_dir.is_dir():
+                            continue
+                        await self._rsync(
+                            directory / sub_dir,
+                            self._settings.python.site_packages_abs / sub_dir,
+                            self._settings.watch_exclude
+                        )
                     await self.restart()
 
     @register

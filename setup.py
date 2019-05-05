@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='unv.deploy',
-    version='0.2.18',
+    version='0.2.19',
     description="""Deploy helpers for UNV framework""",
     url='http://github.com/c137digital/unv_deploy',
     author='Morty Space',
