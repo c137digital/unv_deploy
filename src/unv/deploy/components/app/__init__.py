@@ -70,6 +70,8 @@ class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
     @local
     async def watch(self):
         directory = self._settings.watch_dir
+        site_packages_abs = self._settings.python.site_packages_abs
+
         async for _ in awatch(directory):
             for _, host in get_hosts(self.NAMESPACE):
                 with self._set_user(self._settings.user), self._set_host(host):
@@ -77,8 +79,7 @@ class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
                         if not sub_dir.is_dir():
                             continue
                         await self._rsync(
-                            directory / sub_dir,
-                            self._settings.python.site_packages_abs / sub_dir,
+                            sub_dir, site_packages_abs / sub_dir.parent,
                             self._settings.watch_exclude
                         )
                     await self.restart()
