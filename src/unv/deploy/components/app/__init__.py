@@ -27,7 +27,7 @@ class AppComponentSettings(ComponentSettingsBase):
         },
         'watch': {
             'dir': './src',
-            'exclude': ['__pycache__']
+            'exclude': ['__pycache__', '*.egg-info']
         }
     }
 
