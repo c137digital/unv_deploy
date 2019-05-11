@@ -177,17 +177,15 @@ class DeployComponentTasksBase(DeployTasksBase):
     SETTINGS = None
 
     def __init__(self, user, host, settings=None):
-        super().__init__(user, host)
         settings = settings or self.__class__.SETTINGS
-
         if settings is None or not isinstance(settings, ComponentSettingsBase):
             raise ValueError(
                 "Provide correct 'SETTINGS' value "
                 "shoult be an instance of class 'ComponentSettingsBase' not "
                 f"[{settings}] value and type {type(settings)}"
             )
-
         self._settings = settings
+        super().__init__(self._settings.user, host)
 
 
 class DeployTasksManager(TasksManager):

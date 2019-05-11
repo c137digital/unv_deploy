@@ -8,7 +8,7 @@ SETTINGS = {
             'vagrant': {
                 'public': '10.51.21.11',
                 'private': '0.0.0.0',
-                'components': ['test', 'nginx', 'app']
+                'components': ['test', 'nginx', 'app', 'iptables']
             }
         },
         'components': {

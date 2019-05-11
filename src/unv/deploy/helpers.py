@@ -72,3 +72,10 @@ def get_hosts(component=''):
     for key, value in SETTINGS['hosts'].items():
         if component in value.get('components', []) or not component:
             yield key, value
+
+
+def get_components(public_ip):
+    for value in SETTINGS['hosts'].values():
+        if value['public'] == public_ip:
+            return value['components']
+    return []
