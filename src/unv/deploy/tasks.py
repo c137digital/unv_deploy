@@ -159,7 +159,7 @@ class DeployTasksBase(TasksBase):
     async def _upload_template(
             self, local_path: Path, path: Path, context: dict = None):
         context = context or {}
-        context['task'] = self
+        context['deploy'] = self
         render_path = Path(f'{local_path}.render')
         template = jinja2.Template(local_path.read_text())
         render_path.write_text(template.render(context))
