@@ -107,14 +107,22 @@ class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
     NAMESPACE = 'nginx'
     SETTINGS = NginxComponentSettings()
 
+    def get_iptables_template(self):
+        return """
+            -A INPUT -p tcp --dport 80 -j ACCEPT
+            {% if task.settings.use_https %}
+            -A INPUT -p tcp --dport 443 -j ACCEPT
+            {% endif %}
+        """
+
     @register
     async def build(self):
-        if not self._settings.master:
+        if not self.settings.master:
             print('Nginx already builded on this host, just use nginx.sync')
             return
 
         await self._create_user()
-        await self._mkdir(self._settings.include.parent)
+        await self._mkdir(self.settings.include.parent)
         await self._apt_install(
             'build-essential', 'autotools-dev', 'libexpat-dev',
             'libgd-dev', 'libgeoip-dev', 'libluajit-5.1-dev',
@@ -122,13 +130,13 @@ class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
             'libxslt1-dev'
         )
 
-        async with self._cd(self._settings.build, temporary=True):
-            for package, url in self._settings.packages.items():
+        async with self._cd(self.settings.build, temporary=True):
+            for package, url in self.settings.packages.items():
                 await self._download_and_unpack(url, Path('.', package))
 
             async with self._cd('nginx'):
                 await self._run(
-                    f"./configure --prefix={self._settings.root_abs} "
+                    f"./configure --prefix={self.settings.root_abs} "
                     f"--user='{self._user}' --group='{self._user}' "
                     "--with-pcre=../pcre "
                     "--with-pcre-jit --with-zlib=../zlib "
@@ -141,7 +149,12 @@ class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
 
     @register
     async def sync(self):
-        for template, path in self._settings.configs:
-            await self._upload_template(
-                template, path, {'settings': self._settings})
+        for template, path in self.settings.configs:
+            await self._upload_template(template, path)
         await self._sync_systemd_units()
+
+    @register
+    async def setup(self):
+        await self.build()
+        await self.sync()
+        await self.start()

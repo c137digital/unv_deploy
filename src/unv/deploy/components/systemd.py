@@ -7,7 +7,7 @@ from ..helpers import as_root
 
 class SystemdTasksMixin:
     async def _get_systemd_instances_count(self):
-        systemd = self._settings.systemd
+        systemd = self.settings.systemd
         instances = systemd['instances']
         cpu_count_percent = instances.get('cpu_count_percent', 0)
         count = instances.get('count', 0)
@@ -20,7 +20,7 @@ class SystemdTasksMixin:
         return count or 1
 
     async def _get_systemd_services(self):
-        systemd = self._settings.systemd
+        systemd = self.settings.systemd
         name = systemd['name']
         count = await self._get_systemd_instances_count()
         for instance in range(1, count + 1):
@@ -34,17 +34,11 @@ class SystemdTasksMixin:
         services = [service async for service in self._get_systemd_services()]
         for service in services:
             service_path = Path('/etc', 'systemd', 'system', service['name'])
-            context = {
-                'instance': service['instance'],
-                'settings': self._settings,
-                'public_ip': self._public_ip,
-                'private_ip': self._private_ip,
-                'user': self._user
-            }.copy()
+            context = {'instance': service['instance']}.copy()
             context.update(service.get('context', {}))
             path = service['template']
             if not str(path).startswith('/'):
-                path = (self._settings.local_root / service['template'])
+                path = (self.settings.local_root / service['template'])
                 path = path.resolve()
             await self._upload_template(path, service_path, context)
 

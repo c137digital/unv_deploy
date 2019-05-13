@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart={{ settings.bin }}
+ExecStart={{ task.settings.bin }}
 
 [Install]
 WantedBy=multi-user.target

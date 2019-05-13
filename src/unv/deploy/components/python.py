@@ -45,19 +45,19 @@ class PythonComponentTasks(DeployComponentTasksBase):
         return await self.bin(f'python3 {command}')
 
     async def bin(self, command: str):
-        return await self._run(str(self._settings.root_abs / 'bin' / command))
+        return await self._run(str(self.settings.root_abs / 'bin' / command))
 
     async def shell(self):
         return await self._run(
-            str(self._settings.root_abs / 'bin' / 'python3'),
+            str(self.settings.root_abs / 'bin' / 'python3'),
             interactive=True
         )
 
     @register
     async def build(self):
-        version = self._settings.version
-        fast_build = self._settings.fast_build
-        build_path = self._settings.build_path
+        version = self.settings.version
+        fast_build = self.settings.fast_build
+        build_path = self.settings.build_path
 
         await self._apt_install(
             'make', 'build-essential', 'libssl-dev', 'zlib1g-dev',
@@ -66,7 +66,7 @@ class PythonComponentTasks(DeployComponentTasksBase):
             'tk-dev', 'tcl-dev', 'libffi-dev', 'wget'
         )
 
-        await self._mkdir(self._settings.root, delete=True)
+        await self._mkdir(self.settings.root, delete=True)
 
         async with self._cd(build_path, temporary=True):
             url = 'https://www.python.org/ftp/' \
@@ -80,7 +80,7 @@ class PythonComponentTasks(DeployComponentTasksBase):
                 'LDFLAGS="-L{0}/extlib/lib -Wl,--rpath={0}/lib '
                 '-Wl,--rpath={0}/extlib/lib" '
                 'CPPFLAGS="-I{0}/extlib/include"'.format(
-                    self._settings.root_abs
+                    self.settings.root_abs
                 )
             )
             await self._run('make -j$(nproc) {}'.format(

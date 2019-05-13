@@ -1,3 +1,5 @@
+import jinja2
+
 from pathlib import Path
 
 from unv.deploy.helpers import ComponentSettingsBase, get_components, get_hosts
@@ -41,11 +43,21 @@ class IPtablesDeployTasks(DeployComponentTasksBase, SystemdTasksMixin):
 
     @register
     async def sync(self):
+        context = {
+            'get_hosts': get_hosts,
+            'components': get_components(self._public_ip)
+        }
+        rendered = []
+        for task in self.get_all_deploy_tasks():
+            get_template = getattr(task, 'get_iptables_template', None)
+            if get_template is not None:
+                context['task'] = task
+                template = jinja2.Template(get_template())
+                rendered.append(template.render(context))
+        context['components_templates'] = "\n".join([
+            line.strip() for line in rendered
+        ])
+
         await self._upload_template(
-            self._settings.rules_template, self._settings.rules,
-            {
-                'get_hosts': get_hosts,
-                'components': get_components(self._public_ip)
-            }
-        )
+            self.settings.rules_template, self.settings.rules, context)
         await self._sync_systemd_units()

@@ -24,13 +24,24 @@ def local(task):
 
 
 class DeployTasksBase(TasksBase):
-    def __init__(self, user, host):
+    def __init__(self, manager, user, host):
         self._user = user
         self._public_ip = host['public']
         self._private_ip = host['private']
         self._port = host.get('ssh', 22)
         self._current_prefix = ''
         self._logger = logging.getLogger(self.__class__.__name__)
+
+        super().__init__(manager)
+
+    def get_all_deploy_tasks(self):
+        for task_class in self._manager.tasks.values():
+            if issubclass(task_class, DeployTasksBase):
+                yield task_class(self._manager, self._user, {
+                    'public': self._public_ip,
+                    'private': self._private_ip,
+                    'ssh': self._port
+                })
 
     @contextlib.contextmanager
     def _set_user(self, user):
@@ -148,6 +159,7 @@ class DeployTasksBase(TasksBase):
     async def _upload_template(
             self, local_path: Path, path: Path, context: dict = None):
         context = context or {}
+        context['task'] = self
         render_path = Path(f'{local_path}.render')
         template = jinja2.Template(local_path.read_text())
         render_path.write_text(template.render(context))
@@ -176,7 +188,7 @@ class DeployTasksBase(TasksBase):
 class DeployComponentTasksBase(DeployTasksBase):
     SETTINGS = None
 
-    def __init__(self, user, host, settings=None):
+    def __init__(self, manager, user, host, settings=None):
         settings = settings or self.__class__.SETTINGS
         if settings is None or not isinstance(settings, ComponentSettingsBase):
             raise ValueError(
@@ -184,8 +196,8 @@ class DeployComponentTasksBase(DeployTasksBase):
                 "shoult be an instance of class 'ComponentSettingsBase' not "
                 f"[{settings}] value and type {type(settings)}"
             )
-        self._settings = settings
-        super().__init__(self._settings.user, host)
+        self.settings = settings
+        super().__init__(manager, self.settings.user, host)
 
 
 class DeployTasksManager(TasksManager):
@@ -202,7 +214,7 @@ class DeployTasksManager(TasksManager):
                 user, hosts = self._select_hosts(task_class.NAMESPACE)
 
             tasks = [
-                getattr(task_class(user, host), name)(*args)
+                getattr(task_class(self, user, host), name)(*args)
                 for host in hosts
             ]
 

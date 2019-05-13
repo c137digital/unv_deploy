@@ -62,25 +62,26 @@ class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
     SETTINGS = AppComponentSettings()
     NAMESPACE = 'app'
 
-    def __init__(self, user, host, settings=None):
-        super().__init__(user, host, settings)
-        self._python = PythonComponentTasks(user, host, self._settings.python)
+    def __init__(self, manager, user, host, settings=None):
+        super().__init__(manager, user, host, settings)
+        self._python = PythonComponentTasks(
+            manager, user, host, self.settings.python)
 
     @register
     @local
     async def watch(self):
-        directory = self._settings.watch_dir
-        site_packages_abs = self._settings.python.site_packages_abs
+        directory = self.settings.watch_dir
+        site_packages_abs = self.settings.python.site_packages_abs
 
         async for _ in awatch(directory):
             for _, host in get_hosts(self.NAMESPACE):
-                with self._set_user(self._settings.user), self._set_host(host):
+                with self._set_user(self.settings.user), self._set_host(host):
                     for sub_dir in directory.iterdir():
                         if not sub_dir.is_dir():
                             continue
                         await self._rsync(
                             sub_dir, site_packages_abs / sub_dir.name,
-                            self._settings.watch_exclude
+                            self.settings.watch_exclude
                         )
                     await self.restart()
 
