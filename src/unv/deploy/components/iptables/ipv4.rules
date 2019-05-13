@@ -16,12 +16,6 @@
 {% endfor %}
 {% endif %} #}
 
-{# {% if 'nginx' in components %}
-# accept for http and https
--A INPUT -p tcp --dport 80 -j ACCEPT
--A INPUT -p tcp --dport 443 -j ACCEPT
-{% endif %} #}
-
 {# {% if 'app' in components %}
 # accept from nginx connections
 {% for _, host in get_hosts('nginx') %}

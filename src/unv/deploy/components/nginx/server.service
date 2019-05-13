@@ -4,9 +4,9 @@ After=syslog.target network.target remote-fs.target nss-lookup.target
 
 [Service]
 Type=forking
-PIDFile={{ task.settings.root_abs / 'logs' / 'nginx.pid' }}
-ExecStartPre={{ task.settings.root_abs / 'sbin' / 'nginx -t' }}
-ExecStart={{ task.settings.root_abs / 'sbin' / 'nginx' }}
+PIDFile={{ deploy.settings.root_abs / 'logs' / 'nginx.pid' }}
+ExecStartPre={{ deploy.settings.root_abs / 'sbin' / 'nginx -t' }}
+ExecStart={{ deploy.settings.root_abs / 'sbin' / 'nginx' }}
 ExecReload=/bin/kill -s HUP $MAINPID
 ExecStop=/bin/kill -s QUIT $MAINPID
 

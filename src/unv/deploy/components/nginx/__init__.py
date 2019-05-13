@@ -37,6 +37,12 @@ class NginxComponentSettings(ComponentSettingsBase):
         'access_log': 'logs/access.log',
         'error_log': 'logs/error.log',
         'default_type': 'application/octet-stream',
+        'iptables_template': """
+            -A INPUT -p tcp --dport 80 -j ACCEPT
+            {% if deploy.settings.use_https %}
+            -A INPUT -p tcp --dport 443 -j ACCEPT
+            {% endif %}
+        """
     }
 
     @property
@@ -102,18 +108,17 @@ class NginxComponentSettings(ComponentSettingsBase):
     def master(self):
         return self._data['master']
 
+    @property
+    def iptables_template(self):
+        return self._data['iptables_template']
+
 
 class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
     NAMESPACE = 'nginx'
     SETTINGS = NginxComponentSettings()
 
-    def get_iptables_template(self):
-        return """
-            -A INPUT -p tcp --dport 80 -j ACCEPT
-            {% if task.settings.use_https %}
-            -A INPUT -p tcp --dport 443 -j ACCEPT
-            {% endif %}
-        """
+    async def get_iptables_template(self):
+        return self.settings.iptables_template
 
     @register
     async def build(self):
@@ -151,6 +156,18 @@ class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
     async def sync(self):
         for template, path in self.settings.configs:
             await self._upload_template(template, path)
+
+        for task in self.get_all_deploy_tasks():
+            get_configs = getattr(task, 'get_nginx_include_configs', None)
+            if get_configs is not None:
+                configs = await get_configs()
+                for template, path in configs:
+                    await self._upload_template(
+                        template,
+                        self.settings.root / self.settings.include.parent
+                        / path
+                    )
+
         await self._sync_systemd_units()
 
     @register

@@ -4,14 +4,14 @@ After=network.target
 
 [Service]
 Type=simple
-User={{ task.settings.user }}
-Group={{ task.settings.user }}
-ExecStart={{ task.settings.bin }}
-WorkingDirectory={{ task.settings.home_abs }}
+User={{ deploy.settings.user }}
+Group={{ deploy.settings.user }}
+ExecStart={{ deploy.settings.bin }}
+WorkingDirectory={{ deploy.settings.home_abs }}
 LimitNOFILE={{ limit_nofile }}
 
-Environment=PYTHONPATH={{ task.settings.home_abs }}
-Environment=SETTINGS={{ task.settings.module }}
+Environment=PYTHONPATH={{ deploy.settings.home_abs }}
+Environment=SETTINGS={{ deploy.settings.module }}
 Environment=SETTINGS_DEPLOY_COMPONENTS_APP_INSTANCE={{ instance }}
 
 [Install]

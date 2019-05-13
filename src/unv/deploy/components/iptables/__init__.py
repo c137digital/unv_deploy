@@ -51,9 +51,10 @@ class IPtablesDeployTasks(DeployComponentTasksBase, SystemdTasksMixin):
         for task in self.get_all_deploy_tasks():
             get_template = getattr(task, 'get_iptables_template', None)
             if get_template is not None:
+                template = jinja2.Template(await get_template())
                 context['task'] = task
-                template = jinja2.Template(get_template())
                 rendered.append(template.render(context))
+                context.pop('task')
         context['components_templates'] = "\n".join([
             line.strip() for line in rendered
         ])
