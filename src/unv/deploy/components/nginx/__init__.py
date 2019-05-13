@@ -165,7 +165,7 @@ class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
                     await self._upload_template(
                         template,
                         self.settings.root / self.settings.include.parent
-                        / path
+                        / path, {'deploy': task, 'nginx_deploy': self}
                     )
 
         await self._sync_systemd_units()
