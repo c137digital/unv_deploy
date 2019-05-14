@@ -15,7 +15,7 @@ class VagrantTasks(Tasks):
         await self._local('vagrant ssh -c "sleep 1"')
 
     async def _update_local_known_hosts(self):
-        ips = [host['public'] for _, host in get_hosts()]
+        ips = [host['public_ip'] for _, host in get_hosts()]
         known_hosts = get_homepath() / '.ssh' / 'known_hosts'
 
         if known_hosts.exists():
