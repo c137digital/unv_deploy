@@ -1,6 +1,6 @@
 from unv.utils.tasks import register
 
-from ..tasks import DeployComponentTasksBase
+from ..tasks import DeployComponentTasks
 from ..helpers import ComponentSettingsBase
 
 
@@ -35,7 +35,7 @@ class PythonComponentSettings(ComponentSettingsBase):
         )
 
 
-class PythonComponentTasks(DeployComponentTasksBase):
+class PythonComponentTasks(DeployComponentTasks):
     SETTINGS = PythonComponentSettings()
 
     async def pip(self, command: str):

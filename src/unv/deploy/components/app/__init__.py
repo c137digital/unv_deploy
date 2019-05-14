@@ -2,7 +2,7 @@ from pathlib import Path
 
 from watchgod import awatch
 
-from ...tasks import DeployComponentTasksBase, local, register
+from ...tasks import DeployComponentTasks, local, register
 from ...helpers import ComponentSettingsBase, get_hosts
 
 from ..python import PythonComponentTasks, PythonComponentSettings
@@ -58,7 +58,7 @@ class AppComponentSettings(ComponentSettingsBase):
         return self._data['watch']['exclude']
 
 
-class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
+class AppComponentTasks(DeployComponentTasks, SystemdTasksMixin):
     SETTINGS = AppComponentSettings()
     NAMESPACE = 'app'
 

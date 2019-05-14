@@ -13,8 +13,9 @@ SCHEMA = {
         'valueschema': {
             'type': 'dict',
             'schema': {
-                'public': {'type': 'string'},
-                'private': {'type': 'string'},
+                'public_ip': {'type': 'string'},
+                'private_ip': {'type': 'string'},
+                'port': {'type': 'integer', 'required': True},
                 'components': {'type': 'list', 'schema': {'type': 'string'}}
             }
         }

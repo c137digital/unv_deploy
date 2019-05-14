@@ -1,10 +1,10 @@
 from unv.utils.os import get_homepath
-from unv.utils.tasks import register, TasksBase
+from unv.utils.tasks import register, Tasks
 
 from ..helpers import get_hosts
 
 
-class VagrantTasks(TasksBase):
+class VagrantTasks(Tasks):
     NAMESPACE = 'vagrant'
 
     @register

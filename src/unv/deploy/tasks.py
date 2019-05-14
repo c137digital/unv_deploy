@@ -6,7 +6,7 @@ from pathlib import Path
 
 import jinja2
 
-from unv.utils.tasks import TasksBase, TasksManager, TaskRunError, register
+from unv.utils.tasks import Tasks, TasksManager, TaskRunError, register
 
 from .helpers import get_hosts, as_root
 from .settings import SETTINGS
@@ -23,12 +23,13 @@ def local(task):
     return task
 
 
-class DeployTasksBase(TasksBase):
+class DeployTasks(Tasks):
     def __init__(self, manager, user, host):
-        self._user = user
-        self._public_ip = host['public']
-        self._private_ip = host['private']
-        self._port = host.get('ssh', 22)
+        self.user = user
+        self.public_ip = host['public_ip']
+        self.private_ip = host['private_ip']
+        self.port = host['port']
+
         self._current_prefix = ''
         self._logger = logging.getLogger(self.__class__.__name__)
 
@@ -36,28 +37,28 @@ class DeployTasksBase(TasksBase):
 
     def get_all_deploy_tasks(self):
         for task_class in self._manager.tasks.values():
-            if issubclass(task_class, DeployTasksBase):
-                yield task_class(self._manager, self._user, {
-                    'public': self._public_ip,
-                    'private': self._private_ip,
-                    'ssh': self._port
+            if issubclass(task_class, DeployTasks):
+                yield task_class(self._manager, self.user, {
+                    'public_ip': self.public_ip,
+                    'private_ip': self.private_ip,
+                    'port': self.port
                 })
 
     @contextlib.contextmanager
     def _set_user(self, user):
-        old_user = self._user
-        self._user = user
+        old_user = self.user
+        self.user = user
         yield self
-        self._user = old_user
+        self.user = old_user
 
     @contextlib.contextmanager
     def _set_host(self, host):
         old_public_ip, old_private_ip, old_port =\
-            self._public_ip, self._private_ip, self._port
-        self._public_ip, self._private_ip, self._port =\
+            self.public_ip, self.private_ip, self.port
+        self.public_ip, self.private_ip, self.port =\
             host['public'], host['private'], host.get('ssh', 22)
         yield self
-        self._public_ip, self._private_ip, self._port =\
+        self.public_ip, self.private_ip, self.port =\
             old_public_ip, old_private_ip, old_port
 
     @contextlib.contextmanager
@@ -83,7 +84,7 @@ class DeployTasksBase(TasksBase):
 
     async def _create_user(self):
         """Create user if not exist and sync ssh keys."""
-        user = self._user
+        user = self.user
 
         with self._set_user('root'):
             try:
@@ -120,13 +121,13 @@ class DeployTasksBase(TasksBase):
 
     async def _run(self, command, strip=True, interactive=False) -> str:
         self._logger.debug(
-            f'run [{self._user}@{self._public_ip}:{self._port}] '
+            f'run [{self.user}@{self.public_ip}:{self.port}] '
             f'{self._current_prefix}{command}'
         )
         interactive_flag = '-t' if interactive else ''
         response = await self._local(
-            f"ssh {interactive_flag} -p {self._port} "
-            f"{self._user}@{self._public_ip} "
+            f"ssh {interactive_flag} -p {self.port} "
+            f"{self.user}@{self.public_ip} "
             f"'{self._current_prefix}{command}'",
             interactive=interactive
         ) or ''
@@ -144,8 +145,8 @@ class DeployTasksBase(TasksBase):
 
     async def _upload(self, local_path: Path, path: Path = '~/'):
         await self._local(
-            f'scp -r -P {self._port} {local_path} '
-            f'{self._user}@{self._public_ip}:{path}'
+            f'scp -r -P {self.port} {local_path} '
+            f'{self.user}@{self.public_ip}:{path}'
         )
 
     async def _rsync(self, local_dir, root_dir, exclude=None):
@@ -153,7 +154,7 @@ class DeployTasksBase(TasksBase):
         exclude = ' '.join(exclude)
         await self._local(
             f'rsync -rave ssh --delete {exclude} {local_dir}/ '
-            f'{self._user}@{self._public_ip}:{root_dir}'
+            f'{self.user}@{self.public_ip}:{root_dir}'
         )
 
     async def _upload_template(
@@ -185,7 +186,7 @@ class DeployTasksBase(TasksBase):
         return await self._run('bash', interactive=True)
 
 
-class DeployComponentTasksBase(DeployTasksBase):
+class DeployComponentTasks(DeployTasks):
     SETTINGS = None
 
     def __init__(self, manager, user, host, settings=None):
@@ -199,6 +200,10 @@ class DeployComponentTasksBase(DeployTasksBase):
         self.settings = settings
         super().__init__(manager, self.settings.user, host)
 
+    @classmethod
+    def get_namespace(cls):
+        return cls.SETTINGS.NAME
+
 
 class DeployTasksManager(TasksManager):
     def run_task(self, task_class, name, args):
@@ -206,12 +211,12 @@ class DeployTasksManager(TasksManager):
         is_local = hasattr(method, '__local__')
         is_parallel = hasattr(method, '__parallel__')
 
-        if issubclass(task_class, DeployTasksBase):
+        if issubclass(task_class, DeployTasks):
             if is_local:
-                user = 'local'
-                hosts = [{'public': None, 'private': None, 'ssh': 0}]
+                user = '__local__'
+                hosts = [{'public_ip': None, 'private_ip': None, 'port': 0}]
             else:
-                user, hosts = self._select_hosts(task_class.NAMESPACE)
+                user, hosts = self._filter_hosts(task_class)
 
             tasks = [
                 getattr(task_class(self, user, host), name)(*args)
@@ -228,7 +233,8 @@ class DeployTasksManager(TasksManager):
         else:
             return super().run_task(task_class, name, args)
 
-    def _select_hosts(self, name: str = ''):
+    def _filter_hosts(self, task_class):
+        name = task_class.get_namespace()
         return (
             SETTINGS['components'].get(name, {}).get('user', name),
             [host for _, host in get_hosts(name)]

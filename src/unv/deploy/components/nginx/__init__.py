@@ -2,7 +2,7 @@ from pathlib import Path
 
 from unv.utils.tasks import register
 
-from ...tasks import DeployComponentTasksBase
+from ...tasks import DeployComponentTasks
 from ...helpers import ComponentSettingsBase
 
 from ..systemd import SystemdTasksMixin
@@ -110,7 +110,7 @@ class NginxComponentSettings(ComponentSettingsBase):
         return (self.local_root / self._data['iptables']['v4']).read_text()
 
 
-class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
+class NginxComponentTasks(DeployComponentTasks, SystemdTasksMixin):
     NAMESPACE = 'nginx'
     SETTINGS = NginxComponentSettings()
 
@@ -139,7 +139,7 @@ class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
             async with self._cd('nginx'):
                 await self._run(
                     f"./configure --prefix={self.settings.root_abs} "
-                    f"--user='{self._user}' --group='{self._user}' "
+                    f"--user='{self.user}' --group='{self.user}' "
                     "--with-pcre=../pcre "
                     "--with-pcre-jit --with-zlib=../zlib "
                     "--with-openssl=../openssl --with-http_ssl_module "

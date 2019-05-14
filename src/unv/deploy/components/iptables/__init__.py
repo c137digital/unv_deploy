@@ -3,7 +3,7 @@ import jinja2
 from pathlib import Path
 
 from unv.deploy.helpers import ComponentSettingsBase, get_components, get_hosts
-from unv.deploy.tasks import DeployComponentTasksBase, register
+from unv.deploy.tasks import DeployComponentTasks, register
 from unv.deploy.components.systemd import SystemdTasksMixin
 
 
@@ -37,7 +37,7 @@ class IPtablesComponentSettings(ComponentSettingsBase):
         return f"{self._data['bin']} {self.rules}"
 
 
-class IPtablesDeployTasks(DeployComponentTasksBase, SystemdTasksMixin):
+class IPtablesDeployTasks(DeployComponentTasks, SystemdTasksMixin):
     NAMESPACE = 'iptables'
     SETTINGS = IPtablesComponentSettings()
 
@@ -45,7 +45,7 @@ class IPtablesDeployTasks(DeployComponentTasksBase, SystemdTasksMixin):
     async def sync(self):
         context = {
             'get_hosts': get_hosts,
-            'components': get_components(self._public_ip)
+            'components': get_components(self.public_ip)
         }
         rendered = []
         for task in self.get_all_deploy_tasks():

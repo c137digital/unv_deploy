@@ -76,6 +76,6 @@ def get_hosts(component=''):
 
 def get_components(public_ip):
     for value in SETTINGS['hosts'].values():
-        if value['public'] == public_ip:
+        if value['public_ip'] == public_ip:
             return value['components']
     return []

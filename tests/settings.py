@@ -6,8 +6,9 @@ SETTINGS = {
     'deploy': {
         'hosts': {
             'vagrant': {
-                'public': '10.51.21.11',
-                'private': '0.0.0.0',
+                'public_ip': '10.51.21.11',
+                'private_ip': '0.0.0.0',
+                'port': 22,
                 'components': ['test', 'nginx', 'app', 'iptables']
             }
         },
