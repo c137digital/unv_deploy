@@ -108,3 +108,9 @@ class AppComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
         await self._rmrf(Path(package))
         await self._upload(Path('secure'))
         await self._sync_systemd_units()
+
+    @register
+    async def setup(self):
+        await self.build()
+        await self.sync()
+        await self.start()

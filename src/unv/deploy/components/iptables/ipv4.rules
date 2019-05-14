@@ -8,22 +8,6 @@
 
 # open component ports
 {{ components_templates }}
-
-{# {% if 'redis' in components %}
-# accept from app ips
-{% for _, host in get_hosts('app') %}
--A INPUT -p tcp -s {{ host['private'] }} --dport {{ settings['redis'].port }} -j ACCEPT
-{% endfor %}
-{% endif %} #}
-
-{# {% if 'app' in components %}
-# accept from nginx connections
-{% for _, host in get_hosts('nginx') %}
-{% for server in upstream_servers %}
--A INPUT -p tcp -s {{ host['private'] }} --dport {{ server['port'] }} -j ACCEPT
-{% endfor %}
-{% endfor %}
-{% endif %} #}
 # end open ports
 
 # ssh

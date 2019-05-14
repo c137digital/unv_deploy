@@ -37,12 +37,9 @@ class NginxComponentSettings(ComponentSettingsBase):
         'access_log': 'logs/access.log',
         'error_log': 'logs/error.log',
         'default_type': 'application/octet-stream',
-        'iptables_template': """
-            -A INPUT -p tcp --dport 80 -j ACCEPT
-            {% if deploy.settings.use_https %}
-            -A INPUT -p tcp --dport 443 -j ACCEPT
-            {% endif %}
-        """
+        'iptables': {
+            'v4': 'ipv4.rules'
+        }
     }
 
     @property
@@ -109,8 +106,8 @@ class NginxComponentSettings(ComponentSettingsBase):
         return self._data['master']
 
     @property
-    def iptables_template(self):
-        return self._data['iptables_template']
+    def iptables_v4_rules(self):
+        return (self.local_root / self._data['iptables']['v4']).read_text()
 
 
 class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
@@ -118,7 +115,7 @@ class NginxComponentTasks(DeployComponentTasksBase, SystemdTasksMixin):
     SETTINGS = NginxComponentSettings()
 
     async def get_iptables_template(self):
-        return self.settings.iptables_template
+        return self.settings.iptables_v4_rules
 
     @register
     async def build(self):
