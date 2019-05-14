@@ -65,7 +65,7 @@ class DeployTasks(Tasks):
         old_public_ip, old_private_ip, old_port =\
             self.public_ip, self.private_ip, self.port
         self.public_ip, self.private_ip, self.port =\
-            host['public'], host['private'], host.get('ssh', 22)
+            host['public_ip'], host['private_ip'], host['port']
         yield self
         self.public_ip, self.private_ip, self.port =\
             old_public_ip, old_private_ip, old_port
