@@ -38,7 +38,6 @@ class IPtablesComponentSettings(ComponentSettingsBase):
 
 
 class IPtablesDeployTasks(DeployComponentTasks, SystemdTasksMixin):
-    NAMESPACE = 'iptables'
     SETTINGS = IPtablesComponentSettings()
 
     @register

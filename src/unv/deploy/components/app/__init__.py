@@ -60,7 +60,6 @@ class AppComponentSettings(ComponentSettingsBase):
 
 class AppComponentTasks(DeployComponentTasks, SystemdTasksMixin):
     SETTINGS = AppComponentSettings()
-    NAMESPACE = 'app'
 
     def __init__(self, manager, user, host, settings=None):
         super().__init__(manager, user, host, settings)

@@ -6,23 +6,10 @@ from ..helpers import as_root
 
 
 class SystemdTasksMixin:
-    async def _get_systemd_instances_count(self):
-        systemd = self.settings.systemd
-        instances = systemd['instances']
-        cpu_count_percent = instances.get('cpu_count_percent', 0)
-        count = instances.get('count', 0)
-        if cpu_count_percent:
-            cpu_cores = int(await self._run('nproc --all'))
-            cpu_cores = int(cpu_cores / 100.0 * cpu_count_percent)
-            cpu_cores += count
-            count = cpu_cores
-
-        return count or 1
-
     async def _get_systemd_services(self):
         systemd = self.settings.systemd
         name = systemd['name']
-        count = await self._get_systemd_instances_count()
+        count = await self._calc_instances_count(**systemd['instances'])
         for instance in range(1, count + 1):
             service = systemd.copy()
             service['name'] = name.format(instance=instance)

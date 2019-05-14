@@ -111,7 +111,6 @@ class NginxComponentSettings(ComponentSettingsBase):
 
 
 class NginxComponentTasks(DeployComponentTasks, SystemdTasksMixin):
-    NAMESPACE = 'nginx'
     SETTINGS = NginxComponentSettings()
 
     async def get_iptables_template(self):
