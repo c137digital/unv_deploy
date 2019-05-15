@@ -1,10 +1,10 @@
 from unv.utils.tasks import register
 
 from ..tasks import DeployComponentTasks
-from ..helpers import ComponentSettingsBase
+from ..helpers import DeployComponentSettings
 
 
-class PythonComponentSettings(ComponentSettingsBase):
+class PythonComponentSettings(DeployComponentSettings):
     NAME = 'python'
     DEFAULT = {
         'root': 'python',

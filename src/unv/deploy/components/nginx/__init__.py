@@ -3,12 +3,12 @@ from pathlib import Path
 from unv.utils.tasks import register
 
 from ...tasks import DeployComponentTasks
-from ...helpers import ComponentSettingsBase
+from ...helpers import DeployComponentSettings
 
 from ..systemd import SystemdTasksMixin
 
 
-class NginxComponentSettings(ComponentSettingsBase):
+class NginxComponentSettings(DeployComponentSettings):
     NAME = 'nginx'
     DEFAULT = {
         'systemd': {

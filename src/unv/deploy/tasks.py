@@ -10,7 +10,7 @@ from unv.utils.tasks import Tasks, TasksManager, TaskRunError, register
 
 from .helpers import get_hosts, as_root
 from .settings import SETTINGS
-from .helpers import ComponentSettingsBase
+from .helpers import DeployComponentSettings
 
 
 def parallel(task):
@@ -200,10 +200,10 @@ class DeployComponentTasks(DeployTasks):
 
     def __init__(self, manager, user, host, settings=None):
         settings = settings or self.__class__.SETTINGS
-        if settings is None or not isinstance(settings, ComponentSettingsBase):
+        if settings is None or not isinstance(settings, DeployComponentSettings):
             raise ValueError(
                 "Provide correct 'SETTINGS' value "
-                "shoult be an instance of class 'ComponentSettingsBase' not "
+                "shoult be an instance of class 'DeployComponentSettings' not "
                 f"[{settings}] value and type {type(settings)}"
             )
         self.settings = settings

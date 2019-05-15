@@ -2,12 +2,12 @@ import jinja2
 
 from pathlib import Path
 
-from unv.deploy.helpers import ComponentSettingsBase, get_components, get_hosts
+from unv.deploy.helpers import DeployComponentSettings, get_components, get_hosts
 from unv.deploy.tasks import DeployComponentTasks, register
 from unv.deploy.components.systemd import SystemdTasksMixin
 
 
-class IPtablesComponentSettings(ComponentSettingsBase):
+class IPtablesComponentSettings(DeployComponentSettings):
     NAME = 'iptables'
     DEFAULT = {
         'bin': '/sbin/iptables-restore',

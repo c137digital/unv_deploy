@@ -9,7 +9,7 @@ from unv.utils.collections import update_dict_recur
 from .settings import SETTINGS
 
 
-class ComponentSettingsBase:
+class DeployComponentSettings:
     def __init__(self, settings=None, root=None):
         if settings is None:
             settings = SETTINGS['components'].get(self.__class__.NAME, {})

@@ -3,13 +3,13 @@ from pathlib import Path
 from watchgod import awatch
 
 from ...tasks import DeployComponentTasks, local, register
-from ...helpers import ComponentSettingsBase, get_hosts
+from ...helpers import DeployComponentSettings, get_hosts
 
 from ..python import PythonComponentTasks, PythonComponentSettings
 from ..systemd import SystemdTasksMixin
 
 
-class AppComponentSettings(ComponentSettingsBase):
+class AppComponentSettings(DeployComponentSettings):
     NAME = 'app'
     DEFAULT = {
         'bin': 'app',
