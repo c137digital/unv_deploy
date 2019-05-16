@@ -176,7 +176,10 @@ class DeployTasks(Tasks):
         try:
             await self._upload(render_path, path)
         finally:
-            render_path.unlink()
+            try:
+                render_path.unlink()
+            except FileNotFoundError:
+                pass
 
     async def _download_and_unpack(self, url: str, dest_dir: Path = Path('.')):
         await self._run(f'wget -q {url}')
