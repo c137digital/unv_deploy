@@ -1,8 +1,5 @@
 Vagrant.configure("2") do |config|
     config.vm.box = "generic/ubuntu1604"
-    config.vm.hostname = "unv.deploy"
-    config.vm.network "private_network", ip: "10.51.21.11"
-    
     config.vm.provider "virtualbox" do |v|
         v.name = 'unv_deploy_testing'
         v.memory = 512
@@ -10,8 +7,7 @@ Vagrant.configure("2") do |config|
         v.customize ["modifyvm", :id, "--uartmode1", "disconnected"]
     end
 
-    config.vm.synced_folder ".", "/vagrant", disabled: true
-    
+    config.vm.synced_folder ".", "/vagrant", disabled: true    
     ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
     config.ssh.insert_key = false
     config.vm.provision 'shell', inline: 'rm -rf /root/.ssh'
@@ -21,4 +17,29 @@ Vagrant.configure("2") do |config|
     config.vm.provision 'shell',
         inline: "echo #{ssh_pub_key} >> /home/vagrant/.ssh/authorized_keys",
         privileged: false
+
+    config.vm.define "nginx" do |app|
+        ip = "10.10.10.10"
+        app.vm.network "private_network", ip: ip
+        app.vm.hostname = "unv.deploy.nginx"
+        app.vm.provider "virtualbox" do |v|
+            v.name = 'unv_deploy_nginx'
+        end
+    end
+
+    config.vm.define "app.1" do |app|
+        app.vm.hostname = "unv.deploy.app.1"
+        app.vm.network "private_network", ip: "10.10.10.11"
+        app.vm.provider "virtualbox" do |v|
+            v.name = 'unv_deploy_app_1'
+        end
+    end
+
+    config.vm.define "app.2" do |app|
+        app.vm.hostname = "unv.deploy.app.2"
+        app.vm.network "private_network", ip: "10.10.10.12"
+        app.vm.provider "virtualbox" do |v|
+            v.name = 'unv_deploy_app_2'
+        end
+    end
 end

@@ -228,17 +228,17 @@ class DeployTasksManager(TasksManager):
                 user, hosts = self._filter_hosts(task_class)
 
             tasks = [
-                getattr(task_class(self, user, host), name)(*args)
+                getattr(task_class(self, user, host), name)
                 for host in hosts
             ]
 
             if is_parallel:
                 async def run():
-                    await asyncio.gather(*tasks)
+                    await asyncio.gather(*[task(*args) for task in tasks])
                 asyncio.run(run())
             else:
                 for task in tasks:
-                    asyncio.run(task)
+                    asyncio.run(task(*args))
         else:
             return super().run_task(task_class, name, args)
 

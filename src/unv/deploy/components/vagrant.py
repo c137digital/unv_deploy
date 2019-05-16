@@ -12,7 +12,6 @@ class VagrantTasks(Tasks):
         await self._local('vagrant destroy -f')
         await self._local('vagrant up')
         await self._update_local_known_hosts()
-        await self._local('vagrant ssh -c "sleep 1"')
 
     async def _update_local_known_hosts(self):
         ips = [host['public_ip'] for _, host in get_hosts()]
