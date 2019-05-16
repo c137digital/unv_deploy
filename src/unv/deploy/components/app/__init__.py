@@ -2,7 +2,7 @@ from pathlib import Path
 
 from watchgod import awatch
 
-from ...tasks import DeployComponentTasks, local, register, parallel
+from ...tasks import DeployComponentTasks, local, register, onehost
 from ...helpers import DeployComponentSettings, get_hosts
 
 from ..python import PythonComponentTasks, PythonComponentSettings
@@ -85,12 +85,12 @@ class AppComponentTasks(DeployComponentTasks, SystemdTasksMixin):
                     await self.restart()
 
     @register
-    @parallel
     async def build(self):
         await self._create_user()
         await self._python.build()
 
     @register
+    @onehost
     async def shell(self):
         return await self._python.shell()
 
@@ -110,7 +110,6 @@ class AppComponentTasks(DeployComponentTasks, SystemdTasksMixin):
         await self._sync_systemd_units()
 
     @register
-    @parallel
     async def setup(self):
         await self.build()
         await self.sync()

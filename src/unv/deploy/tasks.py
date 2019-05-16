@@ -13,13 +13,13 @@ from .settings import SETTINGS
 from .helpers import DeployComponentSettings
 
 
-def parallel(task):
-    task.__parallel__ = True
+def local(task):
+    task.__local__ = True
     return task
 
 
-def local(task):
-    task.__local__ = True
+def onehost(task):
+    task.__onehost__ = True
     return task
 
 
@@ -191,6 +191,7 @@ class DeployTasks(Tasks):
         await self._rmrf(archive_dir)
 
     @register
+    @onehost
     async def ssh(self):
         return await self._run('bash', interactive=True)
 
@@ -217,8 +218,8 @@ class DeployComponentTasks(DeployTasks):
 class DeployTasksManager(TasksManager):
     def run_task(self, task_class, name, args):
         method = getattr(task_class, name)
-        is_local = hasattr(method, '__local__')
-        is_parallel = hasattr(method, '__parallel__')
+        is_local = getattr(method, '__local__', False)
+        is_onehost = getattr(method, '__onehost__', False)
 
         if issubclass(task_class, DeployTasks):
             if is_local:
@@ -227,18 +228,23 @@ class DeployTasksManager(TasksManager):
             else:
                 user, hosts = self._filter_hosts(task_class)
 
+            if is_onehost and len(hosts) > 1:
+                hosts_per_index = []
+                for index, (host_name, host) in enumerate(hosts):
+                    hosts_per_index.append([host_name, host])
+                    print(f" ({index}) - {host_name} [{host['public_ip']}]")
+                chosen_index = int(input('Please choose host to run task: '))
+                hosts = [hosts_per_index[chosen_index]]
+
             tasks = [
                 getattr(task_class(self, user, host), name)
-                for host in hosts
+                for _, host in hosts
             ]
 
-            if is_parallel:
-                async def run():
-                    await asyncio.gather(*[task(*args) for task in tasks])
-                asyncio.run(run())
-            else:
-                for task in tasks:
-                    asyncio.run(task(*args))
+            async def run():
+                await asyncio.gather(*[task(*args) for task in tasks])
+
+            asyncio.run(run())
         else:
             return super().run_task(task_class, name, args)
 
@@ -246,5 +252,5 @@ class DeployTasksManager(TasksManager):
         name = task_class.get_namespace()
         return (
             SETTINGS['components'].get(name, {}).get('user', name),
-            [host for _, host in get_hosts(name)]
+            list(get_hosts(name))
         )

@@ -1,4 +1,4 @@
-from ..tasks import DeployComponentTasks, register
+from ..tasks import DeployComponentTasks
 from ..helpers import DeployComponentSettings
 
 
@@ -51,9 +51,7 @@ class PythonComponentTasks(DeployComponentTasks):
             interactive=True
         )
 
-    @register
     async def build(self):
-        print(f'started build on {self.public_ip}')
         version = self.settings.version
         fast_build = self.settings.fast_build
         build_path = self.settings.build_path
@@ -64,7 +62,6 @@ class PythonComponentTasks(DeployComponentTasks):
             'llvm', 'libncurses5-dev', 'libncursesw5-dev', 'xz-utils',
             'tk-dev', 'tcl-dev', 'libffi-dev', 'wget'
         )
-
         await self._mkdir(self.settings.root, delete=True)
 
         async with self._cd(build_path, temporary=True):
@@ -84,7 +81,6 @@ class PythonComponentTasks(DeployComponentTasks):
             )
             await self._run('make -j$(nproc) {}'.format(
                 'build_all' if fast_build else 'build'))
-            print(f'make install on {self.public_ip}')
             await self._run('make install > /dev/null')
 
         await self.pip('install wheel')
