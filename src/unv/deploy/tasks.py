@@ -240,13 +240,12 @@ class DeployTasksManager(TasksManager):
                 chosen_index = int(input('Please choose host to run task: '))
                 hosts = [hosts_per_index[chosen_index]]
 
-            lock = asyncio.Lock()
-            tasks = [
-                getattr(task_class(self, lock, user, host), name)
-                for _, host in hosts
-            ]
-
             async def run():
+                lock = asyncio.Lock()
+                tasks = [
+                    getattr(task_class(self, lock, user, host), name)
+                    for _, host in hosts
+                ]
                 await asyncio.gather(*[task(*args) for task in tasks])
 
             asyncio.run(run())
