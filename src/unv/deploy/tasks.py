@@ -48,7 +48,7 @@ class DeployTasks(Tasks):
     def get_all_deploy_tasks(self):
         for task_class in self._manager.tasks.values():
             if issubclass(task_class, DeployTasks):
-                yield task_class(self._manager, self.user, {
+                yield task_class(self._manager, self._lock, self.user, {
                     'public_ip': self.public_ip,
                     'private_ip': self.private_ip,
                     'port': self.port
