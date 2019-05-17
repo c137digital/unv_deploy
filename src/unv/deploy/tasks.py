@@ -24,7 +24,7 @@ def onehost(task):
 
 
 class DeployTasks(Tasks):
-    def __init__(self, manager, user, host):
+    def __init__(self, manager, lock, user, host):
         self.user = user
         self.public_ip = host['public_ip']
         self.private_ip = host['private_ip']
@@ -32,6 +32,7 @@ class DeployTasks(Tasks):
 
         self._current_prefix = ''
         self._logger = logging.getLogger(self.__class__.__name__)
+        self._lock = lock
 
         super().__init__(manager)
 
@@ -170,16 +171,16 @@ class DeployTasks(Tasks):
             self, local_path: Path, path: Path, context: dict = None):
         context = context or {}
         context.setdefault('deploy', self)
-        render_path = Path(f'{local_path}.render')
-        template = jinja2.Template(local_path.read_text(), enable_async=True)
-        render_path.write_text(await template.render_async(context))
-        try:
-            await self._upload(render_path, path)
-        finally:
+
+        async with self._lock:
+            render_path = Path(f'{local_path}.render')
+            template = jinja2.Template(
+                local_path.read_text(), enable_async=True)
+            render_path.write_text(await template.render_async(context))
             try:
+                await self._upload(render_path, path)
+            finally:
                 render_path.unlink()
-            except FileNotFoundError:
-                pass
 
     async def _download_and_unpack(self, url: str, dest_dir: Path = Path('.')):
         await self._run(f'wget -q {url}')
@@ -202,7 +203,7 @@ class DeployTasks(Tasks):
 class DeployComponentTasks(DeployTasks):
     SETTINGS = None
 
-    def __init__(self, manager, user, host, settings=None):
+    def __init__(self, manager, lock, user, host, settings=None):
         settings = settings or self.__class__.SETTINGS
         if settings is None or not isinstance(settings, DeployComponentSettings):
             raise ValueError(
@@ -211,7 +212,7 @@ class DeployComponentTasks(DeployTasks):
                 f"[{settings}] value and type {type(settings)}"
             )
         self.settings = settings
-        super().__init__(manager, self.settings.user, host)
+        super().__init__(manager, lock, self.settings.user, host)
 
     @classmethod
     def get_namespace(cls):
@@ -239,8 +240,9 @@ class DeployTasksManager(TasksManager):
                 chosen_index = int(input('Please choose host to run task: '))
                 hosts = [hosts_per_index[chosen_index]]
 
+            lock = asyncio.Lock()
             tasks = [
-                getattr(task_class(self, user, host), name)
+                getattr(task_class(self, lock, user, host), name)
                 for _, host in hosts
             ]
 

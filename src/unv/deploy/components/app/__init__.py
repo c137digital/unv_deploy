@@ -61,10 +61,10 @@ class AppComponentSettings(DeployComponentSettings):
 class AppComponentTasks(DeployComponentTasks, SystemdTasksMixin):
     SETTINGS = AppComponentSettings()
 
-    def __init__(self, manager, user, host, settings=None):
-        super().__init__(manager, user, host, settings)
+    def __init__(self, manager, lock, user, host, settings=None):
+        super().__init__(manager, lock, user, host, settings)
         self._python = PythonComponentTasks(
-            manager, user, host, self.settings.python)
+            manager, lock, user, host, self.settings.python)
 
     @register
     @local
