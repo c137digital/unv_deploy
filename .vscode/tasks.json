@@ -4,12 +4,7 @@
         {
             "label": "Python: Build",
             "type": "shell",
-            "command": ". activate.sh && python setup.py sdist bdist_wheel"
-        },
-        {
-            "label": "Python: Upload to testing PyPI",
-            "type": "shell",
-            "command": ". activate.sh && twine upload --repository-url https://test.pypi.org/legacy/ dist/* -u mortyspace"
+            "command": "rm -rf ./build && rm -rf ./dist && rm -rf src/*.egg-info &&. activate.sh && python setup.py sdist bdist_wheel"
         },
         {
             "label": "Python: Release package on PyPI",
