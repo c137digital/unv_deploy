@@ -1,7 +1,6 @@
 Vagrant.configure("2") do |config|
     config.vm.box = "generic/ubuntu1604"
     config.vm.provider "virtualbox" do |v|
-        v.name = 'unv_deploy_testing'
         v.memory = 512
         v.cpus = 2
         v.customize ["modifyvm", :id, "--uartmode1", "disconnected"]
@@ -24,22 +23,6 @@ Vagrant.configure("2") do |config|
         app.vm.hostname = "unv.deploy.nginx"
         app.vm.provider "virtualbox" do |v|
             v.name = 'unv_deploy_nginx'
-        end
-    end
-
-    config.vm.define "app.1" do |app|
-        app.vm.hostname = "unv.deploy.app.1"
-        app.vm.network "private_network", ip: "10.10.10.11"
-        app.vm.provider "virtualbox" do |v|
-            v.name = 'unv_deploy_app_1'
-        end
-    end
-
-    config.vm.define "app.2" do |app|
-        app.vm.hostname = "unv.deploy.app.2"
-        app.vm.network "private_network", ip: "10.10.10.12"
-        app.vm.provider "virtualbox" do |v|
-            v.name = 'unv_deploy_app_2'
         end
     end
 end

@@ -1,5 +1,5 @@
 from ..tasks import DeployComponentTasks
-from ..helpers import DeployComponentSettings
+from ..settings import DeployComponentSettings
 
 
 class PythonComponentSettings(DeployComponentSettings):

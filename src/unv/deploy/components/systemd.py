@@ -2,7 +2,7 @@ from pathlib import Path
 
 from unv.utils.tasks import register
 
-from ..helpers import as_root
+from ..tasks import as_root
 
 
 class SystemdTasksMixin:

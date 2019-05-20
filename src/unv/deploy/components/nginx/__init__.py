@@ -3,7 +3,7 @@ from pathlib import Path
 from unv.utils.tasks import register
 
 from ...tasks import DeployComponentTasks
-from ...helpers import DeployComponentSettings
+from ...settings import DeployComponentSettings
 
 from ..systemd import SystemdTasksMixin
 

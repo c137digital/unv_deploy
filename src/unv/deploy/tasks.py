@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import functools
 import contextlib
 
 from pathlib import Path
@@ -8,13 +9,22 @@ import jinja2
 
 from unv.utils.tasks import Tasks, TasksManager, TaskRunError, register
 
-from .helpers import get_hosts, as_root
-from .settings import SETTINGS
-from .helpers import DeployComponentSettings
+from .settings import SETTINGS, DeployComponentSettings
 
 
-def local(task):
-    task.__local__ = True
+def as_root(func):
+    """Task will run from root, sets to self.user."""
+
+    @functools.wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        with self._set_user('root'):
+            return await func(self, *args, **kwargs)
+
+    return wrapper
+
+
+def nohost(task):
+    task.__nohost__ = True
     return task
 
 
@@ -222,15 +232,15 @@ class DeployComponentTasks(DeployTasks):
 class DeployTasksManager(TasksManager):
     def run_task(self, task_class, name, args):
         method = getattr(task_class, name)
-        is_local = getattr(method, '__local__', False)
+        is_nohost = getattr(method, '__nohost__', False)
         is_onehost = getattr(method, '__onehost__', False)
 
         if issubclass(task_class, DeployTasks):
-            if is_local:
-                user = '__local__'
+            if is_nohost:
+                user = '__nohost__'
                 hosts = [{'public_ip': None, 'private_ip': None, 'port': 0}]
             else:
-                user, hosts = self._filter_hosts(task_class)
+                user, hosts = self._get_user_with_hosts(task_class)
 
             if is_onehost and len(hosts) > 1:
                 hosts_per_index = []
@@ -252,9 +262,9 @@ class DeployTasksManager(TasksManager):
         else:
             return super().run_task(task_class, name, args)
 
-    def _filter_hosts(self, task_class):
+    def _get_user_with_hosts(self, task_class):
         name = task_class.get_namespace()
         return (
-            SETTINGS['components'].get(name, {}).get('user', name),
-            list(get_hosts(name))
+            SETTINGS.get_component_user(name),
+            list(SETTINGS.get_hosts(name))
         )

@@ -2,9 +2,7 @@ import jinja2
 
 from pathlib import Path
 
-from unv.deploy.helpers import (
-    DeployComponentSettings, get_components, get_hosts
-)
+from unv.deploy.settings import SETTINGS, DeployComponentSettings
 from unv.deploy.tasks import DeployComponentTasks, register
 from unv.deploy.components.systemd import SystemdTasksMixin
 
@@ -45,8 +43,8 @@ class IPtablesDeployTasks(DeployComponentTasks, SystemdTasksMixin):
     @register
     async def sync(self):
         context = {
-            'get_hosts': get_hosts,
-            'components': get_components(self.public_ip)
+            'get_hosts': SETTINGS.get_hosts,
+            'components': SETTINGS.get_components(self.public_ip)
         }
         rendered = []
         for task in self.get_all_deploy_tasks():

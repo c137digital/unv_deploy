@@ -2,8 +2,8 @@ from pathlib import Path
 
 from watchgod import awatch
 
-from ...tasks import DeployComponentTasks, local, register, onehost
-from ...helpers import DeployComponentSettings, get_hosts
+from ...tasks import DeployComponentTasks, nohost, register, onehost
+from ...settings import SETTINGS, DeployComponentSettings
 
 from ..python import PythonComponentTasks, PythonComponentSettings
 from ..systemd import SystemdTasksMixin
@@ -67,13 +67,13 @@ class AppComponentTasks(DeployComponentTasks, SystemdTasksMixin):
             manager, lock, user, host, self.settings.python)
 
     @register
-    @local
+    @nohost
     async def watch(self):
         directory = self.settings.watch_dir
         site_packages_abs = self.settings.python.site_packages_abs
 
         async for _ in awatch(directory):
-            for _, host in get_hosts(self.NAMESPACE):
+            for _, host in SETTINGS.get_hosts(self.NAMESPACE):
                 with self._set_user(self.settings.user), self._set_host(host):
                     for sub_dir in directory.iterdir():
                         if not sub_dir.is_dir():

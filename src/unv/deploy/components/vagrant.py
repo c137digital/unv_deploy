@@ -1,7 +1,7 @@
 from unv.utils.os import get_homepath
 from unv.utils.tasks import register, Tasks
 
-from ..helpers import get_hosts
+from ..settings import SETTINGS
 
 
 class VagrantTasks(Tasks):
@@ -14,7 +14,7 @@ class VagrantTasks(Tasks):
         await self._update_local_known_hosts()
 
     async def _update_local_known_hosts(self):
-        ips = [host['public_ip'] for _, host in get_hosts()]
+        ips = [host['public_ip'] for _, host in SETTINGS.get_hosts()]
         known_hosts = get_homepath() / '.ssh' / 'known_hosts'
 
         if known_hosts.exists():
