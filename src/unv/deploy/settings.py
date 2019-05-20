@@ -49,7 +49,7 @@ class DeploySettings(ComponentSettings):
         return self._data.get(name, {}).get('user', name)
 
     def get_component_settings(self, name):
-        return self._data.get(name, {})
+        return self._data['components'].get(name, {})
 
 
 SETTINGS = DeploySettings()
