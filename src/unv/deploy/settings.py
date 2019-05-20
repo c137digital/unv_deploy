@@ -29,7 +29,7 @@ class DeploySettings(ComponentSettings):
         },
         'components': {'allow_unknown': True}
     }
-    DEFAULTS = {
+    DEFAULT = {
         'hosts': {},
         'components': {},
     }
