@@ -238,7 +238,9 @@ class DeployTasksManager(TasksManager):
         if issubclass(task_class, DeployTasks):
             if is_nohost:
                 user = '__nohost__'
-                hosts = [{'public_ip': None, 'private_ip': None, 'port': 0}]
+                hosts = [
+                    ('', {'public_ip': None, 'private_ip': None, 'port': 0})
+                ]
             else:
                 user, hosts = self._get_user_with_hosts(task_class)
 
