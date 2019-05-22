@@ -72,17 +72,21 @@ class AppComponentTasks(DeployComponentTasks, SystemdTasksMixin):
         directory = self.settings.watch_dir
         site_packages_abs = self.settings.python.site_packages_abs
 
-        async for _ in awatch(directory):
-            for _, host in SETTINGS.get_hosts(self.NAMESPACE):
-                with self._set_user(self.settings.user), self._set_host(host):
-                    for sub_dir in directory.iterdir():
-                        if not sub_dir.is_dir():
-                            continue
-                        await self._rsync(
-                            sub_dir, site_packages_abs / sub_dir.name,
-                            self.settings.watch_exclude
-                        )
-                    await self.restart()
+        try:
+            async for _ in awatch(directory):
+                for _, host in SETTINGS.get_hosts(self.NAMESPACE):
+                    with self._set_user(self.settings.user), \
+                            self._set_host(host):
+                        for sub_dir in directory.iterdir():
+                            if not sub_dir.is_dir():
+                                continue
+                            await self._rsync(
+                                sub_dir, site_packages_abs / sub_dir.name,
+                                self.settings.watch_exclude
+                            )
+                        await self.restart()
+        except KeyboardInterrupt:
+            pass
 
     @register
     async def build(self):
