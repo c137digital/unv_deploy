@@ -90,6 +90,11 @@ class DeployComponentSettings:
         return self._data.get('systemd', {})
 
     @property
+    def systemd_config(self):
+        # TODO: move to class all systemd stuff
+        return self.systemd.get('config', [])
+
+    @property
     def root(self):
         return self.home / self._data['root']
 

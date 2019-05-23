@@ -14,5 +14,9 @@ Environment=PYTHONPATH={{ deploy.settings.home_abs }}
 Environment=SETTINGS={{ deploy.settings.module }}
 Environment=SETTINGS_DEPLOY_COMPONENTS_APP_INSTANCE={{ instance }}
 
+{% for conf in deploy.settings.systemd_config %}
+{{ conf }}
+{% endfor %}
+
 [Install]
 WantedBy=multi-user.target

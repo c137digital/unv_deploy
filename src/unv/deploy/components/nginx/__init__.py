@@ -20,7 +20,7 @@ class NginxComponentSettings(DeployComponentSettings):
         'master': True,
         'root': 'app',
         'packages': {
-            'nginx': 'http://nginx.org/download/nginx-1.16.0.tar.gz',
+            'nginx': 'http://nginx.org/download/nginx-1.17.0.tar.gz',
             'pcre': 'https://ftp.pcre.org/pub/pcre/pcre-8.42.tar.gz',
             'zlib': 'http://www.zlib.net/zlib-1.2.11.tar.gz',
             'openssl': 'https://www.openssl.org/source/openssl-1.1.1a.tar.gz'

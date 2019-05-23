@@ -132,6 +132,7 @@ class DeployTasks(Tasks):
     @as_root
     async def _apt_install(self, *packages):
         with self._prefix('DEBIAN_FRONTEND=noninteractive'):
+            await self._run('apt-get update -y -q')
             await self._run(
                 'apt-get install -y -q --no-install-recommends '
                 '--no-install-suggests {}'.format(' '.join(packages))
