@@ -1,8 +1,4 @@
-from pathlib import Path
-
 from unv.utils.tasks import register
-
-from ..tasks import as_root
 
 
 class SystemdTasksMixin:
@@ -16,32 +12,45 @@ class SystemdTasksMixin:
             service['instance'] = instance
             yield service
 
-    @as_root
     async def _sync_systemd_units(self):
         services = [service async for service in self._get_systemd_services()]
+        user = self.user if self.settings.systemd_local else 'root'
+
         for service in services:
-            service_path = Path('/etc', 'systemd', 'system', service['name'])
+            service_path = self.settings.systemd_dir / service['name']
+            if self.settings.systemd_local:
+                await self._mkdir(self.settings.systemd_dir)
+
             context = {'instance': service['instance']}.copy()
             context.update(service.get('context', {}))
             path = service['template']
             if not str(path).startswith('/'):
                 path = (self.settings.local_root / service['template'])
                 path = path.resolve()
-            await self._upload_template(path, service_path, context)
 
-        await self._run('systemctl daemon-reload')
+            with self._set_user(user):
+                await self._upload_template(path, service_path, context)
 
-        for service in services:
-            if service['boot']:
-                await self._run(f'systemctl enable {service["name"]}')
+        with self._set_user(user):
+            user_flag = '--user ' if self.settings.systemd_local else ''
+            await self._run(f'systemctl {user_flag}daemon-reload')
+            await self._systemctl('enable', boot_only=True)
 
-    async def _systemctl(self, command: str, display=False):
+    async def _systemctl(
+            self, command: str, display=False, boot_only=False):
         results = {}
         async for service in self._get_systemd_services():
             if 'manage' in service and not service['manage']:
                 continue
+            if boot_only and not service.get('boot', False):
+                continue
 
-            result = await self._sudo(f'systemctl {command} {service["name"]}')
+            user_flag = '--user ' if self.settings.systemd_local else ''
+            user = self.user if user_flag else 'root'
+
+            with self._set_user(user):
+                result = await self._run(
+                    f'systemctl {user_flag}{command} {service["name"]}')
             results[service['name']] = result
         return results
 

@@ -95,6 +95,20 @@ class DeployComponentSettings:
         return self.systemd.get('config', [])
 
     @property
+    def systemd_dir(self):
+        if self.systemd_local:
+            return self.home_abs / '.config' / 'systemd' / 'user'
+        return Path('/etc', 'systemd', 'system')
+
+    @property
+    def systemd_type(self):
+        return self.systemd.get('type', 'simple')
+
+    @property
+    def systemd_local(self):
+        return self.systemd.get('local', False)
+
+    @property
     def root(self):
         return self.home / self._data['root']
 
