@@ -106,7 +106,10 @@ class DeployTasks(Tasks):
         await asyncio.sleep(timeout)
 
     async def _reboot(self, timeout: int = 15):
-        await self._sudo('reboot now')
+        try:
+            await self._sudo('reboot now')
+        except TaskRunError:
+            pass
         await self._wait(timeout)
 
     async def _create_user(self):
