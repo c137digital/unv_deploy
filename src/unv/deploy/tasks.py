@@ -102,6 +102,13 @@ class DeployTasks(Tasks):
         """Run command on server as root user."""
         return await self._run(command, strip)
 
+    async def _wait(self, timeout: int):
+        await asyncio.sleep(timeout)
+
+    async def _reboot(self, timeout: int = 15):
+        await self._sudo('reboot now')
+        await self._wait(timeout)
+
     async def _create_user(self):
         """Create user if not exist and sync ssh keys."""
         user = self.user
