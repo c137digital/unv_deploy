@@ -99,7 +99,8 @@ class AppComponentTasks(DeployComponentTasks, SystemdTasksMixin):
         return await self._python.shell()
 
     @register
-    async def sync(self):
+    async def sync(self, type_=''):
+        flag = '-I' if type_ == 'force' else '-U'
         name = (await self._local('python setup.py --name')).strip()
         version = (await self._local('python setup.py --version')).strip()
         package = f'{name}-{version}.tar.gz'
@@ -108,7 +109,7 @@ class AppComponentTasks(DeployComponentTasks, SystemdTasksMixin):
         await self._local('python setup.py sdist bdist_wheel')
         await self._upload(Path('dist', package))
         await self._local('rm -rf ./build ./dist')
-        await self._python.pip(f'install -I {package}')
+        await self._python.pip(f'install {flag} {package}')
         await self._rmrf(Path(package))
         await self._upload(Path('secure'))
         await self._sync_systemd_units()

@@ -105,9 +105,9 @@ class DeployTasks(Tasks):
     async def _wait(self, timeout: int):
         await asyncio.sleep(timeout)
 
-    async def _reboot(self, timeout: int = 15):
+    async def _reboot(self, timeout: int = 20):
         try:
-            await self._sudo('reboot now')
+            await self._sudo('reboot')
         except TaskRunError:
             pass
         await self._wait(timeout)
