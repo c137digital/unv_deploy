@@ -105,13 +105,19 @@ class AppComponentTasks(DeployComponentTasks, SystemdTasksMixin):
         version = (await self._local('python setup.py --version')).strip()
         package = f'{name}-{version}.tar.gz'
 
-        await self._local('pip install -e .')
-        await self._local('python setup.py sdist bdist_wheel')
+        async with self._lock:
+            await self._local('pip install -e .')
+            await self._local('python setup.py sdist bdist_wheel')
+
         await self._upload(Path('dist', package))
-        await self._local('rm -rf ./build ./dist')
+
+        async with self._lock:
+            await self._local('rm -rf ./build ./dist')
+
         await self._python.pip(f'install {flag} {package}')
         await self._rmrf(Path(package))
         await self._upload(Path('secure'))
+
         await self._sync_systemd_units()
 
     @register
