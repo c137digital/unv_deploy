@@ -108,10 +108,7 @@ class AppComponentTasks(DeployComponentTasks, SystemdTasksMixin):
         async with self._lock:
             await self._local('pip install -e .')
             await self._local('python setup.py sdist bdist_wheel')
-
-        await self._upload(Path('dist', package))
-
-        async with self._lock:
+            await self._upload(Path('dist', package))
             await self._local('rm -rf ./build ./dist')
 
         await self._python.pip(f'install {flag} {package}')
