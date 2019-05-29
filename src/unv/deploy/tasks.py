@@ -68,8 +68,10 @@ class DeployTasks(Tasks):
     def _set_user(self, user):
         old_user = self.user
         self.user = user
-        yield self
-        self.user = old_user
+        try:
+            yield self
+        finally:
+            self.user = old_user
 
     @contextlib.contextmanager
     def _set_host(self, host):
@@ -77,25 +79,31 @@ class DeployTasks(Tasks):
             self.public_ip, self.private_ip, self.port
         self.public_ip, self.private_ip, self.port =\
             host['public_ip'], host['private_ip'], host['port']
-        yield self
-        self.public_ip, self.private_ip, self.port =\
-            old_public_ip, old_private_ip, old_port
+        try:
+            yield self
+        finally:
+            self.public_ip, self.private_ip, self.port =\
+                old_public_ip, old_private_ip, old_port
 
     @contextlib.contextmanager
     def _prefix(self, command):
         old_prefix = self._current_prefix
         self._current_prefix = f'{self._current_prefix} {command} '
-        yield
-        self._current_prefix = old_prefix
+        try:
+            yield
+        finally:
+            self._current_prefix = old_prefix
 
     @contextlib.asynccontextmanager
     async def _cd(self, path: Path, temporary=False):
         if temporary:
             await self._mkdir(path, delete=True)
-        with self._prefix(f'cd {path} &&'):
-            yield
-        if temporary:
-            await self._rmrf(path)
+        try:
+            with self._prefix(f'cd {path} &&'):
+                yield
+        finally:
+            if temporary:
+                await self._rmrf(path)
 
     @as_root
     async def _sudo(self, command, strip=True):
