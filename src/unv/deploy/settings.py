@@ -4,7 +4,7 @@ import inspect
 from pathlib import Path
 
 from unv.utils.collections import update_dict_recur
-from unv.app.core import ComponentSettings
+from unv.app.settings import ComponentSettings
 
 
 class DeploySettings(ComponentSettings):
@@ -56,6 +56,9 @@ SETTINGS = DeploySettings()
 
 
 class DeployComponentSettings:
+    NAME = ''
+    DEFAULT = {}
+
     def __init__(self, settings=None, root=None):
         if settings is None:
             settings = SETTINGS.get_component_settings(self.__class__.NAME)

@@ -38,7 +38,7 @@ class SystemdTasksMixin:
 
     async def _systemctl(
             self, command: str, display=False, boot_only=False):
-        results = {}
+        results = []
         async for service in self._get_systemd_services():
             if 'manage' in service and not service['manage']:
                 continue
@@ -51,7 +51,7 @@ class SystemdTasksMixin:
             with self._set_user(user):
                 result = await self._run(
                     f'systemctl {user_flag}{command} {service["name"]}')
-            results[service['name']] = result
+            results.append(result)
         return results
 
     @register
@@ -69,5 +69,5 @@ class SystemdTasksMixin:
     @register
     async def status(self):
         results = await self._systemctl('status')
-        for service, result in results.items():
+        for result in results:
             print(result)

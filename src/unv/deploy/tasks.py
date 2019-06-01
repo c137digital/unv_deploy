@@ -1,8 +1,8 @@
 import asyncio
 import logging
 import functools
-import contextlib
 
+from contextlib import contextmanager, asynccontextmanager
 from pathlib import Path
 
 import jinja2
@@ -64,7 +64,7 @@ class DeployTasks(Tasks):
                     'port': self.port
                 })
 
-    @contextlib.contextmanager
+    @contextmanager
     def _set_user(self, user):
         old_user = self.user
         self.user = user
@@ -73,7 +73,7 @@ class DeployTasks(Tasks):
         finally:
             self.user = old_user
 
-    @contextlib.contextmanager
+    @contextmanager
     def _set_host(self, host):
         old_public_ip, old_private_ip, old_port =\
             self.public_ip, self.private_ip, self.port
@@ -85,7 +85,7 @@ class DeployTasks(Tasks):
             self.public_ip, self.private_ip, self.port =\
                 old_public_ip, old_private_ip, old_port
 
-    @contextlib.contextmanager
+    @contextmanager
     def _prefix(self, command):
         old_prefix = self._current_prefix
         self._current_prefix = f'{self._current_prefix} {command} '
@@ -94,7 +94,7 @@ class DeployTasks(Tasks):
         finally:
             self._current_prefix = old_prefix
 
-    @contextlib.asynccontextmanager
+    @asynccontextmanager
     async def _cd(self, path: Path, temporary=False):
         if temporary:
             await self._mkdir(path, delete=True)
@@ -232,7 +232,8 @@ class DeployComponentTasks(DeployTasks):
 
     def __init__(self, manager, lock, user, host, settings=None):
         settings = settings or self.__class__.SETTINGS
-        if settings is None or not isinstance(settings, DeployComponentSettings):
+        if settings is None or \
+                not isinstance(settings, DeployComponentSettings):
             raise ValueError(
                 "Provide correct 'SETTINGS' value "
                 "shoult be an instance of class 'DeployComponentSettings' not "
@@ -263,7 +264,7 @@ class DeployTasksManager(TasksManager):
 
             if is_onehost and len(hosts) > 1:
                 hosts_per_index = []
-                for index, (host_name, host) in enumerate(hosts):
+                for index, (host_name, host) in enumerate(hosts, start=1):
                     hosts_per_index.append([host_name, host])
                     print(f" ({index}) - {host_name} [{host['public_ip']}]")
                 chosen_index = int(input('Please choose host to run task: '))

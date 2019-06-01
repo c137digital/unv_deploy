@@ -2,9 +2,10 @@ import jinja2
 
 from pathlib import Path
 
-from unv.deploy.settings import SETTINGS, DeployComponentSettings
-from unv.deploy.tasks import DeployComponentTasks, register
-from unv.deploy.components.systemd import SystemdTasksMixin
+from ...tasks import DeployComponentTasks, register
+from ...settings import SETTINGS, DeployComponentSettings
+
+from ..systemd import SystemdTasksMixin
 
 
 class IPtablesComponentSettings(DeployComponentSettings):
