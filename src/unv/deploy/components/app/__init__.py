@@ -113,8 +113,7 @@ class AppComponentTasks(DeployComponentTasks, SystemdTasksMixin):
 
         await self._python.pip(f'install {flag} {package}')
         await self._rmrf(Path(package))
-        await self._upload(Path('secure'))
-
+        await self._rsync(Path('secure'), Path('secure'))
         await self._sync_systemd_units()
 
     @register

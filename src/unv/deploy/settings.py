@@ -1,5 +1,6 @@
 import copy
 import inspect
+import importlib
 
 from pathlib import Path
 
@@ -10,6 +11,11 @@ from unv.app.settings import ComponentSettings
 class DeploySettings(ComponentSettings):
     KEY = 'deploy'
     SCHEMA = {
+        'tasks': {
+            'type': 'list',
+            'required': True,
+            'schema': {'type': 'string'}
+        },
         'hosts': {
             'type': 'dict',
             'keyschema': {'type': 'string'},
@@ -18,8 +24,8 @@ class DeploySettings(ComponentSettings):
                 'schema': {
                     'public_ip': {'type': 'string', 'required': True},
                     'private_ip': {'type': 'string'},
-                    'port': {'type': 'integer', 'required': True},
-                    'provider': {'type': 'string', 'required': False},
+                    'port': {'type': 'integer'},
+                    'provider': {'type': 'string'},
                     'components': {
                         'type': 'list',
                         'schema': {'type': 'string'}
@@ -27,9 +33,10 @@ class DeploySettings(ComponentSettings):
                 }
             }
         },
-        'components': {'allow_unknown': True}
+        'components': {'required': True, 'allow_unknown': True}
     }
     DEFAULT = {
+        'tasks': [],
         'hosts': {},
         'components': {},
     }
@@ -37,6 +44,8 @@ class DeploySettings(ComponentSettings):
     def get_hosts(self, component=''):
         for key, value in self._data['hosts'].items():
             if component in value.get('components', []) or not component:
+                value.setdefault('private_ip', value['public_ip'])
+                value.setdefault('port', 22)
                 yield key, value
 
     def get_components(self, public_ip):
@@ -50,6 +59,12 @@ class DeploySettings(ComponentSettings):
 
     def get_component_settings(self, name):
         return self._data['components'].get(name, {})
+
+    @property
+    def task_classes(self):
+        for module_path in self._data['tasks']:
+            module_path, class_path = module_path.split(':')
+            yield getattr(importlib.import_module(module_path), class_path)
 
 
 SETTINGS = DeploySettings()

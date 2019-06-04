@@ -1,26 +1,16 @@
-from pathlib import Path
+from unv.app.settings import ComponentSettings
 
-TEST_NGINX_CONFIG = str((Path(__file__).parent / 'testnginx.conf').resolve())
-
-SETTINGS = {
+SETTINGS = ComponentSettings.create({
     'deploy': {
+        'tasks': [
+            'unv.deploy.components.nginx:NginxComponentTasks',
+            'unv.deploy.components.pyapp:PyAppComponentTasks',
+            'unv.deploy.components.vagrant:VagrantTasks',
+            'unv.deploy.components.iptables:IPtablesDeployTasks'
+        ],
         'hosts': {
-            # 'vagrant.app.1': {
-            #     'public_ip': '10.10.10.11',
-            #     'private_ip': '10.10.10.11',
-            #     'port': 22,
-            #     'components': ['app', 'iptables']
-            # },
-            # 'vagrant.app.2': {
-            #     'public_ip': '10.10.10.12',
-            #     'private_ip': '10.10.10.12',
-            #     'port': 22,
-            #     'components': ['app', 'iptables']
-            # },
             'vagrant': {
                 'public_ip': '10.10.10.10',
-                'private_ip': '10.10.10.10',
-                'port': 22,
                 'components': ['app', 'nginx', 'iptables']
             }
         },
@@ -32,4 +22,4 @@ SETTINGS = {
             }
         }
     }
-}
+})

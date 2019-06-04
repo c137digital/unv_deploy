@@ -248,6 +248,10 @@ class DeployComponentTasks(DeployTasks):
 
 
 class DeployTasksManager(TasksManager):
+    def register_from_settings(self):
+        for class_ in SETTINGS.task_classes:
+            self.register(class_)
+
     def run_task(self, task_class, name, args):
         method = getattr(task_class, name)
         is_nohost = getattr(method, '__nohost__', False)

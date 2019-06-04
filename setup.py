@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='unv.deploy',
-    version='0.2.49',
+    version='0.3',
     description="""Deploy helpers for UNV framework""",
     url='http://github.com/c137digital/unv_deploy',
     author='Morty Space',
@@ -29,5 +29,10 @@ setup(
         'jinja2',
         'watchgod'
     ],
-    zip_safe=True
+    zip_safe=True,
+    entry_points={
+        'console_scripts': [
+            'deploy = unv.deploy.bin:run'
+        ]
+    }
 )
