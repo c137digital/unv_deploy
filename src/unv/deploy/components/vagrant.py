@@ -14,6 +14,7 @@ class VagrantTasks(Tasks):
         await self._update_local_known_hosts()
 
     async def _update_local_known_hosts(self):
+        # FIXME: stopped working properly
         ips = [host['public_ip'] for _, host in SETTINGS.get_hosts()]
         known_hosts = get_homepath() / '.ssh' / 'known_hosts'
 

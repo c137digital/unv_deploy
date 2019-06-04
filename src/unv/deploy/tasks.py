@@ -248,8 +248,8 @@ class DeployComponentTasks(DeployTasks):
 
 class DeployTasksManager(TasksManager):
     def register_from_settings(self):
-        for class_ in SETTINGS.task_classes:
-            self.register(class_)
+        for key, class_ in SETTINGS.task_classes:
+            self.tasks[key] = class_
 
     def run_task(self, task_class, name, args):
         method = getattr(task_class, name)
