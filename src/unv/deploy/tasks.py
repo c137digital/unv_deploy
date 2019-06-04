@@ -46,11 +46,10 @@ class DeployTasks(Tasks):
 
         super().__init__(manager)
 
-    async def _calc_instances_count(
-            self, count: int = 0, cpu_count_percent: int = 0):
-        if cpu_count_percent:
+    async def _calc_instances_count(self, count: int = 0, percent: int = 0):
+        if percent:
             cpu_cores = int(await self._run('nproc --all'))
-            cpu_cores = int(cpu_cores / 100.0 * cpu_count_percent)
+            cpu_cores = int(cpu_cores / 100.0 * percent)
             cpu_cores += count
             count = cpu_cores
         return count or 1
