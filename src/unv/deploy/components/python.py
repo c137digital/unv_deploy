@@ -4,7 +4,21 @@ from ..settings import DeployComponentSettings
 
 class PythonComponentSettings(DeployComponentSettings):
     NAME = 'python'
+    SCHEMA = {
+        'root': {'type': 'string', 'required': True},
+        'version': {'type': 'string', 'required': True},
+        'user': {'type': 'string', 'required': True},
+        'build': {
+            'type': 'dict',
+            'schema': {
+                'fast': {'type': 'boolean'},
+                'path': {'type': 'string'}
+            },
+            'required': True
+        }
+    }
     DEFAULT = {
+        'user': 'python',
         'root': 'python',
         'version': '3.7.3',
         'build': {

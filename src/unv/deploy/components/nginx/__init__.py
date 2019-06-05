@@ -10,6 +10,40 @@ from ..systemd import SystemdTasksMixin
 
 class NginxComponentSettings(DeployComponentSettings):
     NAME = 'nginx'
+    SCHEMA = {
+        'systemd': SystemdTasksMixin.SCHEMA,
+        'master': {'type': 'boolean', 'required': True},
+        'root': {'type': 'string', 'required': True},
+        'packages': {
+            'type': 'dict',
+            'schema': {
+                'nginx': {'type': 'string', 'required': True},
+                'pcre': {'type': 'string', 'required': True},
+                'zlib': {'type': 'string', 'required': True},
+                'openssl': {'type': 'string', 'required': True}
+            },
+            'required': True
+        },
+        'configs': {'type': 'dict'},
+        'connections': {'type': 'integer', 'required': True},
+        'workers': {'type': 'integer', 'required': True},
+        'aio': {'type': 'boolean', 'required': True},
+        'sendfile': {'type': 'boolean', 'required': True},
+        'tcp_nopush': {'type': 'boolean', 'required': True},
+        'tcp_nodelay': {'type': 'boolean', 'required': True},
+        'keepalive_timeout': {'type': 'integer', 'required': True},
+        'include': {'type': 'string', 'required': True},
+        'access_log': {'type': 'string', 'required': True},
+        'error_log': {'type': 'string', 'required': True},
+        'default_type': {'type': 'string', 'required': True},
+        'iptables': {
+            'type': 'dict',
+            'schema': {
+                'v4': {'type': 'string', 'required': True}
+            },
+            'required': True
+        }
+    }
     DEFAULT = {
         'systemd': {
             'template': 'server.service',
@@ -28,10 +62,10 @@ class NginxComponentSettings(DeployComponentSettings):
         'configs': {'server.conf': 'nginx.conf'},
         'connections': 1000,
         'workers': 1,
-        'aio': 'on',
-        'sendfile': 'on',
-        'tcp_nopush': 'on',
-        'tcp_nodelay': 'on',
+        'aio': True,
+        'sendfile': True,
+        'tcp_nopush': True,
+        'tcp_nodelay': True,
         'keepalive_timeout': 60,
         'include': 'conf/apps/*.conf',
         'access_log': 'logs/access.log',
@@ -75,7 +109,7 @@ class NginxComponentSettings(DeployComponentSettings):
 
     @property
     def aio(self):
-        return self._data['aio']
+        return 'on' if self._data['aio'] else 'off'
 
     @property
     def sendfile(self):

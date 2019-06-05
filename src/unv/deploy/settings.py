@@ -5,7 +5,7 @@ import importlib
 from pathlib import Path
 
 from unv.utils.collections import update_dict_recur
-from unv.app.settings import ComponentSettings
+from unv.app.settings import ComponentSettings, validate_schema
 
 
 class DeploySettings(ComponentSettings):
@@ -72,13 +72,16 @@ SETTINGS = DeploySettings()
 class DeployComponentSettings:
     NAME = ''
     DEFAULT = {}
+    SCHEMA = {}
 
     def __init__(self, settings=None, root=None):
         if settings is None:
             settings = SETTINGS.get_component_settings(self.__class__.NAME)
-        # TODO: add schema validation
-        self._data = update_dict_recur(
+        settings = update_dict_recur(
             copy.deepcopy(self.__class__.DEFAULT), settings)
+        settings = validate_schema(self.__class__.SCHEMA, settings)
+
+        self._data = settings
         self.local_root = root or Path(inspect.getfile(self.__class__)).parent
 
     @property

@@ -11,10 +11,23 @@ from ..systemd import SystemdTasksMixin
 
 class AppComponentSettings(DeployComponentSettings):
     NAME = 'app'
+    SCHEMA = {
+        'bin': {'type': 'string'},
+        'instance': {'type': 'integer'},
+        'settings': {'type': 'string'},
+        'systemd': SystemdTasksMixin.SCHEMA,
+        'watch': {
+            'type': 'dict',
+            'schema': {
+                'dir': {'type': 'string'},
+                'exclude': {'type': 'list', 'schema': {'type': 'string'}}
+            }
+        }
+    }
     DEFAULT = {
         'bin': 'app',
         'instance': 1,
-        'settings': 'secure.production',
+        'settings': 'secure.prod',
         'systemd': {
             'template': 'app.service',
             'name': 'app_{instance}.service',

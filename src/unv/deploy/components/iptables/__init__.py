@@ -10,6 +10,18 @@ from ..systemd import SystemdTasksMixin
 
 class IPtablesComponentSettings(DeployComponentSettings):
     NAME = 'iptables'
+    SCHEMA = {
+        'bin': {'type': 'string', 'required': True},
+        'user': {'type': 'string', 'required': True},
+        'rules': {
+            'type': 'dict',
+            'schema': {
+                'template': {'type': 'string', 'required': True},
+                'name': {'type': 'string', 'required': True}
+            }
+        },
+        'systemd': SystemdTasksMixin.SCHEMA
+    }
     DEFAULT = {
         'bin': '/sbin/iptables-restore',
         'user': 'root',

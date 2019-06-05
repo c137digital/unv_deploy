@@ -2,6 +2,29 @@ from unv.utils.tasks import register
 
 
 class SystemdTasksMixin:
+    SCHEMA = {
+        'type': 'dict',
+        'schema': {
+            'template': {'type': 'string'},
+            'name': {'type': 'string'},
+            'boot': {'type': 'boolean'},
+            'instances': {
+                'type': 'dict',
+                'schema': {
+                    'count': {'type': 'integer'},
+                    'percent': {'type': 'integer'}
+                }
+            },
+            'context': {
+                'type': 'dict',
+                'schema': {
+                    'limit_nofile': {'type': 'integer'},
+                    'description': {'type': 'string'}
+                }
+            }
+        }
+    }
+
     async def _get_systemd_services(self):
         systemd = self.settings.systemd
         name = systemd['name']
