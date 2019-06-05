@@ -12,8 +12,8 @@ class DeploySettings(ComponentSettings):
     KEY = 'deploy'
     SCHEMA = {
         'tasks': {
-            'type': 'dict',
-            'required': True,
+            'type': 'list',
+            'schema': {'type': 'string'}
         },
         'hosts': {
             'type': 'dict',
@@ -35,7 +35,7 @@ class DeploySettings(ComponentSettings):
         'components': {'required': True, 'allow_unknown': True}
     }
     DEFAULT = {
-        'tasks': {},
+        'tasks': [],
         'hosts': {},
         'components': {},
     }
@@ -61,10 +61,9 @@ class DeploySettings(ComponentSettings):
 
     @property
     def task_classes(self):
-        for key, module_path in self._data['tasks'].items():
+        for module_path in self._data['tasks']:
             module_path, class_path = module_path.split(':')
-            yield key, getattr(
-                importlib.import_module(module_path), class_path)
+            yield getattr(importlib.import_module(module_path), class_path)
 
 
 SETTINGS = DeploySettings()
