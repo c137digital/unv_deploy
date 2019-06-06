@@ -8,6 +8,14 @@ class SystemdTasksMixin:
             'template': {'type': 'string'},
             'name': {'type': 'string'},
             'boot': {'type': 'boolean'},
+            'type': {'type': 'string'},
+            'local': {'type': 'boolean'},
+            'config': {
+                'type': 'list',
+                'schema': {
+                    'type': 'string'
+                }
+            },
             'instances': {
                 'type': 'dict',
                 'schema': {
