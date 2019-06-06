@@ -53,14 +53,17 @@ class PythonComponentTasks(DeployComponentTasks):
     async def pip(self, command: str):
         return await self.run(f'pip3 {command}')
 
-    async def run(self, command: str, interactive: int = False):
+    async def run(
+            self, command: str, interactive: int = False, prefix: str = ''):
+        if prefix:
+            prefix = f'{prefix} '
         return await self._run(
-            str(self.settings.root_abs / 'bin' / command),
+            f"{prefix}{self.settings.root_abs / 'bin' / command}",
             interactive=interactive
         )
 
-    async def shell(self):
-        return await self.run('python3', interactive=True)
+    async def shell(self, prefix: str = ''):
+        return await self.run('python3', interactive=True, prefix=prefix)
 
     async def build(self):
         version = self.settings.version

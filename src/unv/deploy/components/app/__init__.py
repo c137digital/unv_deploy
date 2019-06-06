@@ -109,7 +109,8 @@ class AppComponentTasks(DeployComponentTasks, SystemdTasksMixin):
     @register
     @onehost
     async def shell(self):
-        return await self._python.shell()
+        return await self._python.shell(
+            prefix=f'SETTINGS={self.settings.module}')
 
     @register
     async def sync(self, type_=''):
