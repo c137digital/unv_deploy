@@ -9,7 +9,6 @@ class SystemdTasksMixin:
             'name': {'type': 'string'},
             'boot': {'type': 'boolean'},
             'type': {'type': 'string'},
-            'local': {'type': 'boolean'},
             'config': {
                 'type': 'list',
                 'schema': {
@@ -45,12 +44,9 @@ class SystemdTasksMixin:
 
     async def _sync_systemd_units(self):
         services = [service async for service in self._get_systemd_services()]
-        user = self.user if self.settings.systemd_local else 'root'
 
         for service in services:
             service_path = self.settings.systemd_dir / service['name']
-            if self.settings.systemd_local:
-                await self._mkdir(self.settings.systemd_dir)
 
             context = {'instance': service['instance']}.copy()
             context.update(service.get('context', {}))
@@ -59,12 +55,11 @@ class SystemdTasksMixin:
                 path = (self.settings.local_root / service['template'])
                 path = path.resolve()
 
-            with self._set_user(user):
+            with self._set_user('root'):
                 await self._upload_template(path, service_path, context)
 
-        with self._set_user(user):
-            user_flag = '--user ' if self.settings.systemd_local else ''
-            await self._run(f'systemctl {user_flag}daemon-reload')
+        with self._set_user('root'):
+            await self._run('systemctl daemon-reload')
             await self._systemctl('enable', boot_only=True)
 
     async def _systemctl(
@@ -76,12 +71,9 @@ class SystemdTasksMixin:
             if boot_only and not service.get('boot', False):
                 continue
 
-            user_flag = '--user ' if self.settings.systemd_local else ''
-            user = self.user if user_flag else 'root'
-
-            with self._set_user(user):
+            with self._set_user('root'):
                 result = await self._run(
-                    f'systemctl {user_flag}{command} {service["name"]}')
+                    f'systemctl {command} {service["name"]}')
             results.append(result)
         return results
 

@@ -4,10 +4,8 @@ After=network.target
 
 [Service]
 Type={{ deploy.settings.systemd_type }}
-{%- if not deploy.settings.systemd_local %}
 User={{ deploy.settings.user }}
 Group={{ deploy.settings.user }}
-{%- endif %}
 ExecStart={{ deploy.settings.bin }}
 WorkingDirectory={{ deploy.settings.home_abs }}
 LimitNOFILE={{ limit_nofile }}

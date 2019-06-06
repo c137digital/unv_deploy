@@ -32,7 +32,6 @@ class AppSettings(DeployComponentSettings):
             'template': 'app.service',
             'name': 'app_{instance}.service',
             'boot': True,
-            'local': True,
             'type': 'simple',
             'instances': {'count': 0, 'percent': 0},
             'context': {
