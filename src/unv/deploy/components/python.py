@@ -2,7 +2,7 @@ from ..tasks import DeployComponentTasks
 from ..settings import DeployComponentSettings
 
 
-class PythonComponentSettings(DeployComponentSettings):
+class PythonSettings(DeployComponentSettings):
     NAME = 'python'
     SCHEMA = {
         'root': {'type': 'string', 'required': True},
@@ -47,8 +47,8 @@ class PythonComponentSettings(DeployComponentSettings):
         )
 
 
-class PythonComponentTasks(DeployComponentTasks):
-    SETTINGS = PythonComponentSettings()
+class PythonTasks(DeployComponentTasks):
+    SETTINGS = PythonSettings()
 
     async def pip(self, command: str):
         return await self.run(f'pip3 {command}')

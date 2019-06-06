@@ -3,10 +3,10 @@ from unv.app.settings import ComponentSettings
 SETTINGS = ComponentSettings.create({
     'deploy': {
         'tasks': [
-            'unv.deploy.components.nginx:NginxComponentTasks',
-            'unv.deploy.components.app:AppComponentTasks',
+            'unv.deploy.components.nginx:NginxTasks',
+            'unv.deploy.components.app:AppTasks',
             'unv.deploy.components.vagrant:VagrantTasks',
-            'unv.deploy.components.iptables:IPtablesDeployTasks'
+            'unv.deploy.components.iptables:IPtablesTasks'
         ],
         'hosts': {
             'vagrant': {

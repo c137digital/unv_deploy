@@ -5,11 +5,11 @@ from watchgod import awatch
 from ...tasks import DeployComponentTasks, nohost, register, onehost
 from ...settings import SETTINGS, DeployComponentSettings
 
-from ..python import PythonComponentTasks, PythonComponentSettings
+from ..python import PythonTasks, PythonSettings
 from ..systemd import SystemdTasksMixin
 
 
-class AppComponentSettings(DeployComponentSettings):
+class AppSettings(DeployComponentSettings):
     NAME = 'app'
     SCHEMA = {
         'bin': {'type': 'string'},
@@ -48,7 +48,7 @@ class AppComponentSettings(DeployComponentSettings):
     def python(self):
         settings = self._data.get('python', {})
         settings['user'] = self.user
-        return PythonComponentSettings(settings)
+        return PythonSettings(settings)
 
     @property
     def bin(self):
@@ -71,12 +71,12 @@ class AppComponentSettings(DeployComponentSettings):
         return self._data['watch']['exclude']
 
 
-class AppComponentTasks(DeployComponentTasks, SystemdTasksMixin):
-    SETTINGS = AppComponentSettings()
+class AppTasks(DeployComponentTasks, SystemdTasksMixin):
+    SETTINGS = AppSettings()
 
     def __init__(self, manager, lock, user, host, settings=None):
         super().__init__(manager, lock, user, host, settings)
-        self._python = PythonComponentTasks(
+        self._python = PythonTasks(
             manager, lock, user, host, self.settings.python)
 
     @register

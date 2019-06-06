@@ -8,7 +8,7 @@ from ...settings import DeployComponentSettings
 from ..systemd import SystemdTasksMixin
 
 
-class NginxComponentSettings(DeployComponentSettings):
+class NginxSettings(DeployComponentSettings):
     NAME = 'nginx'
     SCHEMA = {
         'systemd': SystemdTasksMixin.SCHEMA,
@@ -144,8 +144,8 @@ class NginxComponentSettings(DeployComponentSettings):
         return (self.local_root / self._data['iptables']['v4']).read_text()
 
 
-class NginxComponentTasks(DeployComponentTasks, SystemdTasksMixin):
-    SETTINGS = NginxComponentSettings()
+class NginxTasks(DeployComponentTasks, SystemdTasksMixin):
+    SETTINGS = NginxSettings()
 
     async def get_iptables_template(self):
         return self.settings.iptables_v4_rules

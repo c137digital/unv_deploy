@@ -8,7 +8,7 @@ from ...settings import SETTINGS, DeployComponentSettings
 from ..systemd import SystemdTasksMixin
 
 
-class IPtablesComponentSettings(DeployComponentSettings):
+class IPtablesSettings(DeployComponentSettings):
     NAME = 'iptables'
     SCHEMA = {
         'bin': {'type': 'string', 'required': True},
@@ -50,8 +50,8 @@ class IPtablesComponentSettings(DeployComponentSettings):
         return f"{self._data['bin']} {self.rules}"
 
 
-class IPtablesDeployTasks(DeployComponentTasks, SystemdTasksMixin):
-    SETTINGS = IPtablesComponentSettings()
+class IPtablesTasks(DeployComponentTasks, SystemdTasksMixin):
+    SETTINGS = IPtablesSettings()
 
     @register
     async def sync(self):
