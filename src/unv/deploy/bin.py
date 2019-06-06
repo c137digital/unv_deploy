@@ -4,7 +4,7 @@ import importlib
 
 
 def run():
-    name, command = sys.argv[1], sys.argv[2]
+    name, commands = sys.argv[1], sys.argv[2:]
     module_path = None
     modules = ['app.settings.', 'secure.', '']
     for module in modules:
@@ -21,4 +21,4 @@ def run():
     from .tasks import DeployTasksManager
     manager = DeployTasksManager()
     manager.register_from_settings()
-    manager.run(command)
+    manager.run(' '.join(commands))

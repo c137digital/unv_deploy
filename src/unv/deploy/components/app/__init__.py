@@ -32,7 +32,7 @@ class AppComponentSettings(DeployComponentSettings):
             'template': 'app.service',
             'name': 'app_{instance}.service',
             'boot': True,
-            'instances': {'count': 1},
+            'instances': {'count': 0, 'percent': 0},
             'context': {
                 'limit_nofile': 2000,
                 'description': "Application description",
