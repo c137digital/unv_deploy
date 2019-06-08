@@ -1,3 +1,5 @@
+import asyncio
+
 from pathlib import Path
 
 from watchgod import awatch
@@ -40,7 +42,7 @@ class AppSettings(DeployComponentSettings):
             }
         },
         'watch': {
-            'dir': './src',
+            'dirs': ['./src', './secure'],
             'exclude': ['__pycache__', '*.egg-info']
         }
     }
@@ -64,8 +66,8 @@ class AppSettings(DeployComponentSettings):
         return self._data['instance']
 
     @property
-    def watch_dir(self):
-        return Path(self._data['watch']['dir'])
+    def watch_dirs(self):
+        return Path(self._data['watch']['dirs'])
 
     @property
     def watch_exclude(self):
@@ -83,24 +85,25 @@ class AppTasks(DeployComponentTasks, SystemdTasksMixin):
     @register
     @nohost
     async def watch(self):
-        directory = self.settings.watch_dir
-        site_packages_abs = self.settings.python.site_packages_abs
+        await asyncio.gather(*[
+            self._watch_and_sync_dir(directory)
+            for directory in self.settings.watch_dirs
+        ])
 
-        try:
-            async for _ in awatch(directory):
-                for _, host in SETTINGS.get_hosts(self.NAMESPACE):
-                    with self._set_user(self.settings.user), \
-                            self._set_host(host):
-                        for sub_dir in directory.iterdir():
-                            if not sub_dir.is_dir():
-                                continue
-                            await self._rsync(
-                                sub_dir, site_packages_abs / sub_dir.name,
-                                self.settings.watch_exclude
-                            )
-                        await self.restart()
-        except KeyboardInterrupt:
-            pass
+    async def _watch_and_sync_dir(self, directory):
+        site_packages_abs = self.settings.python.site_packages_abs
+        async for _ in awatch(directory):
+            for _, host in SETTINGS.get_hosts(self.NAMESPACE):
+                with self._set_user(self.settings.user), \
+                        self._set_host(host):
+                    for sub_dir in directory.iterdir():
+                        if not sub_dir.is_dir():
+                            continue
+                        await self._rsync(
+                            sub_dir, site_packages_abs / sub_dir.name,
+                            self.settings.watch_exclude
+                        )
+                    await self.restart()
 
     @register
     async def build(self):
