@@ -67,7 +67,7 @@ class AppSettings(DeployComponentSettings):
 
     @property
     def watch_dirs(self):
-        return Path(self._data['watch']['dirs'])
+        return (Path(directory) for directory in self._data['watch']['dirs'])
 
     @property
     def watch_exclude(self):
