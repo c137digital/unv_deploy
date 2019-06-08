@@ -21,7 +21,7 @@ class AppSettings(DeployComponentSettings):
         'watch': {
             'type': 'dict',
             'schema': {
-                'dir': {'type': 'string'},
+                'dirs': {'type': 'list', 'schema': {'type': 'string'}},
                 'exclude': {'type': 'list', 'schema': {'type': 'string'}}
             }
         }
