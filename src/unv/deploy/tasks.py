@@ -225,6 +225,12 @@ class DeployTasks(Tasks):
     async def ssh(self):
         return await self._run('bash', interactive=True)
 
+    @register
+    @onehost
+    @as_root
+    async def root(self):
+        return await self._run('bash', interactive=True)
+
 
 class DeployComponentTasks(DeployTasks):
     SETTINGS = None

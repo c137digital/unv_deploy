@@ -6,6 +6,7 @@ import importlib
 def run():
     name, commands = sys.argv[1], sys.argv[2:]
     module_path = None
+    # TODO: need add current to dir PYTHONPATH
     modules = ['app.settings.', 'secure.', '']
     for module in modules:
         module_path = f'{module}{name}'
