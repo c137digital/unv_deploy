@@ -2,11 +2,13 @@ import os
 import sys
 import importlib
 
+from pathlib import Path
+
 
 def run():
+    sys.path.append(str(Path().cwd()))
     name, commands = sys.argv[1], sys.argv[2:]
     module_path = None
-    # TODO: need add current to dir PYTHONPATH
     modules = ['app.settings.', 'secure.', '']
     for module in modules:
         module_path = f'{module}{name}'
