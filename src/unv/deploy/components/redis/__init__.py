@@ -17,10 +17,7 @@ class RedisSettings(DeployComponentSettings):
         'packages': {
             'type': 'dict',
             'schema': {
-                'nginx': {'type': 'string', 'required': True},
-                'pcre': {'type': 'string', 'required': True},
-                'zlib': {'type': 'string', 'required': True},
-                'openssl': {'type': 'string', 'required': True}
+                'redis': {'type': 'string', 'required': True},
             },
             'required': True
         },
@@ -54,10 +51,7 @@ class RedisSettings(DeployComponentSettings):
         'master': True,
         'root': 'app',
         'packages': {
-            'nginx': 'http://nginx.org/download/nginx-1.17.0.tar.gz',
-            'pcre': 'https://ftp.pcre.org/pub/pcre/pcre-8.42.tar.gz',
-            'zlib': 'http://www.zlib.net/zlib-1.2.11.tar.gz',
-            'openssl': 'https://www.openssl.org/source/openssl-1.1.1a.tar.gz'
+            'redis': 'http://download.redis.io/releases/redis-5.0.5.tar.gz'
         },
         'configs': {'server.conf': 'nginx.conf'},
         'connections': 1000,
@@ -92,12 +86,15 @@ class RedisSettings(DeployComponentSettings):
 class RedisTasks(DeployComponentTasks, SystemdTasksMixin):
     SETTINGS = RedisSettings()
 
-    async def get_iptables_template(self):
-        return self.settings.iptables_v4_rules
+    # TODO: add packages
+    # async def get_iptables_template(self):
+    #     return self.settings.iptables_v4_rules
 
     @register
     async def build(self):
         await self._create_user()
+
+        # TODO: move fix packages
         await self._sudo('apt-get update')
         await self._sudo('apt-get build-dep redis -y')
 
@@ -109,7 +106,7 @@ class RedisTasks(DeployComponentTasks, SystemdTasksMixin):
                 await self._run('make distclean')
                 # NOTE: ARCH='' used for fixing bug in
                 # hiredis only for arm builds
-                await self._run("make -j$(nproc) ARCH='' MALLOC=jemalloc")
+                await self._run("make -j$(nproc) MALLOC=jemalloc")
                 await self._run(
                     f"make PREFIX={self.settings.root_abs} install")
 
@@ -136,4 +133,4 @@ class RedisTasks(DeployComponentTasks, SystemdTasksMixin):
     async def setup(self):
         await self.build()
         await self.sync()
-        await self.start()
+        # await self.start()
