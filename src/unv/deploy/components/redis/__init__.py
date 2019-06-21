@@ -104,8 +104,6 @@ class RedisTasks(DeployComponentTasks, SystemdTasksMixin):
 
             async with self._cd('redis'):
                 await self._run('make distclean')
-                # NOTE: ARCH='' used for fixing bug in
-                # hiredis only for arm builds
                 await self._run("make -j$(nproc) MALLOC=jemalloc")
                 await self._run(
                     f"make PREFIX={self.settings.root_abs} install")
