@@ -12,7 +12,13 @@ class RedisSettings(DeployComponentSettings):
     NAME = 'redis'
     SCHEMA = {
         'systemd': SystemdTasksMixin.SCHEMA,
-        'master': {'type': 'boolean', 'required': True},
+        'config': {
+            'type': 'dict',
+            'schema': {
+                'template': {'type': 'string', 'required': True},
+                'name': {'type': 'string', 'required': True}
+            }
+        },
         'root': {'type': 'string', 'required': True},
         'packages': {
             'type': 'dict',
@@ -21,25 +27,7 @@ class RedisSettings(DeployComponentSettings):
             },
             'required': True
         },
-        'configs': {'type': 'dict'},
-        'connections': {'type': 'integer', 'required': True},
-        'workers': {'type': 'integer', 'required': True},
-        'aio': {'type': 'boolean', 'required': True},
-        'sendfile': {'type': 'boolean', 'required': True},
-        'tcp_nopush': {'type': 'boolean', 'required': True},
-        'tcp_nodelay': {'type': 'boolean', 'required': True},
-        'keepalive_timeout': {'type': 'integer', 'required': True},
-        'include': {'type': 'string', 'required': True},
-        'access_log': {'type': 'string', 'required': True},
-        'error_log': {'type': 'string', 'required': True},
-        'default_type': {'type': 'string', 'required': True},
-        'iptables': {
-            'type': 'dict',
-            'schema': {
-                'v4': {'type': 'string', 'required': True}
-            },
-            'required': True
-        }
+        'port': {'type': 'integer', 'required': True}
     }
     DEFAULT = {
         'systemd': {
@@ -48,35 +36,32 @@ class RedisSettings(DeployComponentSettings):
             'boot': True,
             'instances': {'count': 1}
         },
-        'master': True,
+        'config': {
+            'template': 'server.conf',
+            'name': 'redis.conf'
+        },
         'root': 'app',
         'packages': {
             'redis': 'http://download.redis.io/releases/redis-5.0.5.tar.gz'
         },
-        'configs': {'server.conf': 'nginx.conf'},
-        'connections': 1000,
-        'workers': 1,
-        'aio': True,
-        'sendfile': True,
-        'tcp_nopush': True,
-        'tcp_nodelay': True,
-        'keepalive_timeout': 60,
-        'include': 'conf/apps/*.conf',
-        'access_log': 'logs/access.log',
-        'error_log': 'logs/error.log',
-        'default_type': 'application/octet-stream',
-        'iptables': {
-            'v4': 'ipv4.rules'
-        }
+        'port': 5673
     }
 
     @property
-    def build(self):
+    def build_dir(self):
         return self.root / 'build'
 
     @property
     def packages(self):
         return self._data['packages']
+
+    @property
+    def config_template(self):
+        pass
+
+    @property
+    def port(self):
+        return self._data['port']
 
     @property
     def iptables_v4_rules(self):
@@ -98,7 +83,7 @@ class RedisTasks(DeployComponentTasks, SystemdTasksMixin):
         await self._sudo('apt-get update')
         await self._sudo('apt-get build-dep redis -y')
 
-        async with self._cd(self.settings.build, temporary=True):
+        async with self._cd(self.settings.build_dir, temporary=True):
             for package, url in self.settings.packages.items():
                 await self._download_and_unpack(url, Path('.', package))
 
