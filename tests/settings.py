@@ -6,12 +6,13 @@ SETTINGS = ComponentSettings.create({
             'unv.deploy.components.nginx:NginxTasks',
             'unv.deploy.components.app:AppTasks',
             'unv.deploy.components.vagrant:VagrantTasks',
-            'unv.deploy.components.iptables:IPtablesTasks'
+            'unv.deploy.components.iptables:IPtablesTasks',
+            'unv.deploy.components.redis:RedisTasks'
         ],
         'hosts': {
             'vagrant': {
                 'public_ip': '10.10.10.10',
-                'components': ['app', 'nginx', 'iptables']
+                'components': ['app', 'nginx', 'iptables', 'redis']
             }
         },
         'components': {

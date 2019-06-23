@@ -19,6 +19,9 @@ class RedisSettings(DeployComponentSettings):
                 'name': {'type': 'string', 'required': True}
             }
         },
+        'workdir': {'type': 'string', 'required': True},
+        'port': {'type': 'integer', 'required': True},
+        'maxmemory': {'type': 'string', 'required': True},
         'root': {'type': 'string', 'required': True},
         'packages': {
             'type': 'dict',
@@ -27,12 +30,11 @@ class RedisSettings(DeployComponentSettings):
             },
             'required': True
         },
-        'port': {'type': 'integer', 'required': True}
     }
     DEFAULT = {
         'systemd': {
             'template': 'server.service',
-            'name': 'nginx.service',
+            'name': 'redis.service',
             'boot': True,
             'instances': {'count': 1}
         },
@@ -40,16 +42,22 @@ class RedisSettings(DeployComponentSettings):
             'template': 'server.conf',
             'name': 'redis.conf'
         },
+        'workdir': '.',
+        'port': 6379,
+        'maxmemory': '128mb',
         'root': 'app',
         'packages': {
             'redis': 'http://download.redis.io/releases/redis-5.0.5.tar.gz'
         },
-        'port': 5673
     }
 
     @property
     def build_dir(self):
-        return self.root / 'build'
+        return self.home_abs / 'build'
+
+    @property
+    def bin(self):
+        return self.root_abs / 'bin' / 'redis-server'
 
     @property
     def packages(self):
@@ -57,31 +65,43 @@ class RedisSettings(DeployComponentSettings):
 
     @property
     def config_template(self):
-        pass
+        template = self._data['config']['template']
+        if not template.startswith('/'):
+            template = (self.local_root / template).resolve()
+        return Path(template)
+
+    @property
+    def config_path(self):
+        return self.root_abs / self._data['config']['name']
+
+    @property
+    def workdir(self):
+        return self.root_abs / self._data['workdir']
 
     @property
     def port(self):
         return self._data['port']
 
     @property
-    def iptables_v4_rules(self):
-        return (self.local_root / self._data['iptables']['v4']).read_text()
+    def maxmemory(self):
+        return self._data['maxmemory']
+
+    # @property
+    # def iptables_v4_rules(self):
+    #     return (self.local_root / self._data['iptables']['v4']).read_text()
 
 
 class RedisTasks(DeployComponentTasks, SystemdTasksMixin):
     SETTINGS = RedisSettings()
 
     # TODO: add packages
+    # # /proc/sys/net/core/somaxconn to 5000 (need command)
     # async def get_iptables_template(self):
     #     return self.settings.iptables_v4_rules
 
     @register
     async def build(self):
         await self._create_user()
-
-        # TODO: move fix packages
-        await self._sudo('apt-get update')
-        await self._sudo('apt-get build-dep redis -y')
 
         async with self._cd(self.settings.build_dir, temporary=True):
             for package, url in self.settings.packages.items():
@@ -95,22 +115,9 @@ class RedisTasks(DeployComponentTasks, SystemdTasksMixin):
 
     @register
     async def sync(self):
-        pass
-        # for template, path in self.settings.configs:
-        #     await self._upload_template(template, path)
-
-        # for task in self.get_all_deploy_tasks():
-        #     get_configs = getattr(task, 'get_nginx_include_configs', None)
-        #     if get_configs is not None:
-        #         configs = await get_configs()
-        #         for template, path in configs:
-        #             await self._upload_template(
-        #                 template,
-        #                 self.settings.root / self.settings.include.parent
-        #                 / path, {'deploy': task, 'nginx_deploy': self}
-        #             )
-
-        # await self._sync_systemd_units()
+        await self._upload_template(
+            self.settings.config_template, self.settings.config_path)
+        await self._sync_systemd_units()
 
     @register
     async def setup(self):
