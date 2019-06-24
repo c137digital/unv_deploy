@@ -1,0 +1,4 @@
+# accept from app ips
+{% for _, host in get_hosts('app') %}
+-A INPUT -p tcp -s {{ host['private_ip'] }} --dport {{ deploy.settings.port }} -j ACCEPT
+{% endfor %}

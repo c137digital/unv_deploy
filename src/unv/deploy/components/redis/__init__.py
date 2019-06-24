@@ -30,6 +30,13 @@ class RedisSettings(DeployComponentSettings):
             },
             'required': True
         },
+        'iptables': {
+            'type': 'dict',
+            'schema': {
+                'v4': {'type': 'string', 'required': True},
+            },
+            'required': True
+        },
     }
     DEFAULT = {
         'systemd': {
@@ -39,6 +46,7 @@ class RedisSettings(DeployComponentSettings):
             'instances': {'count': 1}
         },
         'config': {
+            # http://download.redis.io/redis-stable/redis.conf
             'template': 'server.conf',
             'name': 'redis.conf'
         },
@@ -49,6 +57,9 @@ class RedisSettings(DeployComponentSettings):
         'packages': {
             'redis': 'http://download.redis.io/releases/redis-5.0.5.tar.gz'
         },
+        'iptables': {
+            'v4': 'ipv4.rules'
+        }
     }
 
     @property
@@ -86,9 +97,9 @@ class RedisSettings(DeployComponentSettings):
     def maxmemory(self):
         return self._data['maxmemory']
 
-    # @property
-    # def iptables_v4_rules(self):
-    #     return (self.local_root / self._data['iptables']['v4']).read_text()
+    @property
+    def iptables_v4_rules(self):
+        return (self.local_root / self._data['iptables']['v4']).read_text()
 
 
 class RedisTasks(DeployComponentTasks, SystemdTasksMixin):
@@ -96,8 +107,8 @@ class RedisTasks(DeployComponentTasks, SystemdTasksMixin):
 
     # TODO: add packages
     # # /proc/sys/net/core/somaxconn to 5000 (need command)
-    # async def get_iptables_template(self):
-    #     return self.settings.iptables_v4_rules
+    async def get_iptables_template(self):
+        return self.settings.iptables_v4_rules
 
     @register
     async def build(self):
@@ -123,4 +134,4 @@ class RedisTasks(DeployComponentTasks, SystemdTasksMixin):
     async def setup(self):
         await self.build()
         await self.sync()
-        # await self.start()
+        await self.start()
