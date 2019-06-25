@@ -160,7 +160,7 @@ class NginxTasks(DeployComponentTasks, SystemdTasksMixin):
         await self._mkdir(self.settings.include.parent)
         await self._apt_install(
             'build-essential', 'autotools-dev', 'libexpat-dev',
-            'libgd-dev', 'libgeoip-dev', 'libluajit-5.1-dev',
+            'libgd-dev', 'libgeoip-dev', 'liblua5.1-0-dev',
             'libmhash-dev', 'libpam0g-dev', 'libperl-dev',
             'libxslt1-dev'
         )
