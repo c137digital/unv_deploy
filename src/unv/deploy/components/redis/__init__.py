@@ -22,6 +22,7 @@ class RedisSettings(DeployComponentSettings):
         'workdir': {'type': 'string', 'required': True},
         'port': {'type': 'integer', 'required': True},
         'maxmemory': {'type': 'string', 'required': True},
+        'databases': {'type': 'integer', 'required': True},
         'root': {'type': 'string', 'required': True},
         'packages': {
             'type': 'dict',
@@ -53,6 +54,7 @@ class RedisSettings(DeployComponentSettings):
         'workdir': '.',
         'port': 6379,
         'maxmemory': '128mb',
+        'databases': 16,
         'root': 'app',
         'packages': {
             'redis': 'http://download.redis.io/releases/redis-5.0.5.tar.gz'
@@ -98,6 +100,10 @@ class RedisSettings(DeployComponentSettings):
         return self._data['maxmemory']
 
     @property
+    def databases(self):
+        return self._data['databases']
+
+    @property
     def iptables_v4_rules(self):
         return (self.local_root / self._data['iptables']['v4']).read_text()
 
@@ -106,6 +112,7 @@ class RedisTasks(DeployComponentTasks, SystemdTasksMixin):
     SETTINGS = RedisSettings()
 
     # TODO: add packages
+    # TODO: install sysfs kernel params
     # # /proc/sys/net/core/somaxconn to 5000 (need command)
     async def get_iptables_template(self):
         return self.settings.iptables_v4_rules
