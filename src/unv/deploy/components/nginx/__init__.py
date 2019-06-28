@@ -20,9 +20,15 @@ class NginxSettings(DeployComponentSettings):
                 'nginx': {'type': 'string', 'required': True},
                 'pcre': {'type': 'string', 'required': True},
                 'zlib': {'type': 'string', 'required': True},
-                'openssl': {'type': 'string', 'required': True}
+                'openssl': {'type': 'string', 'required': True},
+                'geoip2': {'type': 'string', 'required': True},
+                'libmaxminddb': {'type': 'string', 'required': True}
             },
             'required': True
+        },
+        'packages_dir': {
+            'type': 'dict',
+            'required': False
         },
         'configs': {'type': 'dict'},
         'connections': {'type': 'integer', 'required': True},
@@ -36,6 +42,7 @@ class NginxSettings(DeployComponentSettings):
         'access_log': {'type': 'string', 'required': True},
         'error_log': {'type': 'string', 'required': True},
         'default_type': {'type': 'string', 'required': True},
+        'geoip2': {'type': 'boolean', 'required': True},
         'iptables': {
             'type': 'dict',
             'schema': {
@@ -57,7 +64,14 @@ class NginxSettings(DeployComponentSettings):
             'nginx': 'http://nginx.org/download/nginx-1.17.1.tar.gz',
             'pcre': 'https://ftp.pcre.org/pub/pcre/pcre-8.42.tar.gz',
             'zlib': 'http://www.zlib.net/zlib-1.2.11.tar.gz',
-            'openssl': 'https://www.openssl.org/source/openssl-1.1.1a.tar.gz'
+            'openssl': 'https://www.openssl.org/source/openssl-1.1.1a.tar.gz',
+            'geoip2': 'https://github.com/leev/ngx_http_geoip2_'
+                'module/archive/master.tar.gz',
+            'libmaxminddb': 'https://github.com/maxmind/libmaxminddb/releases'
+                '/download/1.3.2/libmaxminddb-1.3.2.tar.gz'
+        },
+        'packages_dir': {
+            'geoip2': 'ngx_http_geoip2_module-master',
         },
         'configs': {'server.conf': 'nginx.conf'},
         'connections': 1000,
@@ -71,6 +85,7 @@ class NginxSettings(DeployComponentSettings):
         'access_log': 'logs/access.log',
         'error_log': 'logs/error.log',
         'default_type': 'application/octet-stream',
+        'geoip2': True,
         'iptables': {
             'v4': 'ipv4.rules'
         }
@@ -83,6 +98,10 @@ class NginxSettings(DeployComponentSettings):
     @property
     def packages(self):
         return self._data['packages']
+
+    @property
+    def packages_dir(self):
+        return self._data.get('packages_dir', {})
 
     @property
     def configs(self):
@@ -140,6 +159,10 @@ class NginxSettings(DeployComponentSettings):
         return self._data['master']
 
     @property
+    def geoip2(self):
+        return self._data['geoip2']
+
+    @property
     def iptables_v4_rules(self):
         return (self.local_root / self._data['iptables']['v4']).read_text()
 
@@ -165,20 +188,39 @@ class NginxTasks(DeployComponentTasks, SystemdTasksMixin):
             'libxslt1-dev'
         )
 
-        async with self._cd(self.settings.build, temporary=True):
+        await self._mkdir(self.settings.build)
+        async with self._cd(self.settings.build, temporary=False):
             for package, url in self.settings.packages.items():
-                await self._download_and_unpack(url, Path('.', package))
+                if package in ('geoip2', 'libmaxminddb') \
+                        and not self.settings.geoip2:
+                    continue
+                await self._download_and_unpack(
+                    url, Path('.', package),
+                    archive_dir_name=self.settings.packages_dir.get(package)
+                )
+
+            if self.settings.geoip2:
+                async with self._cd('libmaxminddb'):
+                    await self._run('./configure')
+                    await self._run('make')
+                    await self._run('make check')
+                    await self._sudo('make install')
+
+            raise
 
             async with self._cd('nginx'):
-                await self._run(
+                build_command = (
                     f"./configure --prefix={self.settings.root_abs} "
                     f"--user='{self.user}' --group='{self.user}' "
                     "--with-pcre=../pcre "
                     "--with-pcre-jit --with-zlib=../zlib "
                     "--with-openssl=../openssl --with-http_ssl_module "
                     "--with-http_v2_module --with-threads "
-                    "--with-file-aio"
+                    "--with-file-aio "
                 )
+                if self.settings.geoip2:
+                    build_command += '--add-module=../geoip2'
+                print(await self._run(build_command))
                 await self._run('make')
                 await self._run('make install')
 
