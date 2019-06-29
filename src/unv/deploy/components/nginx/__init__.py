@@ -2,7 +2,7 @@ from pathlib import Path
 
 from unv.utils.tasks import register
 
-from ...tasks import DeployComponentTasks
+from ...tasks import DeployComponentTasks, as_root
 from ...settings import DeployComponentSettings
 
 from ..systemd import SystemdTasksMixin
@@ -173,6 +173,22 @@ class NginxTasks(DeployComponentTasks, SystemdTasksMixin):
     async def get_iptables_template(self):
         return self.settings.iptables_v4_rules
 
+    @as_root
+    async def _install_libmaxminddb(self):
+        # TODO: move to other package?
+        package = 'libmaxminddb'
+        url = self.settings.packages[package]
+
+        async with self._cd('build', temporary=True):
+            await self._download_and_unpack(url, Path('.', package))
+
+            async with self._cd('libmaxminddb'):
+                await self._run('./configure')
+                await self._run('make')
+                await self._run('make check')
+                await self._run('make install')
+                await self._run('ldconfig')
+
     @register
     async def build(self):
         if not self.settings.master:
@@ -188,25 +204,20 @@ class NginxTasks(DeployComponentTasks, SystemdTasksMixin):
             'libxslt1-dev'
         )
 
-        await self._mkdir(self.settings.build)
-        async with self._cd(self.settings.build, temporary=False):
+        if self.settings.geoip2:
+            await self._install_libmaxminddb()
+
+        async with self._cd(self.settings.build, temporary=True):
             for package, url in self.settings.packages.items():
-                if package in ('geoip2', 'libmaxminddb') \
-                        and not self.settings.geoip2:
+                if package == 'libmaxminddb':
                     continue
+                if package == 'geoip2' and not self.settings.geoip2:
+                    continue
+
                 await self._download_and_unpack(
                     url, Path('.', package),
                     archive_dir_name=self.settings.packages_dir.get(package)
                 )
-
-            if self.settings.geoip2:
-                async with self._cd('libmaxminddb'):
-                    await self._run('./configure')
-                    await self._run('make')
-                    await self._run('make check')
-                    await self._sudo('make install')
-
-            raise
 
             async with self._cd('nginx'):
                 build_command = (
@@ -219,8 +230,8 @@ class NginxTasks(DeployComponentTasks, SystemdTasksMixin):
                     "--with-file-aio "
                 )
                 if self.settings.geoip2:
-                    build_command += '--add-module=../geoip2'
-                print(await self._run(build_command))
+                    build_command += '--add-module=../geoip2 '
+                await self._run(build_command)
                 await self._run('make')
                 await self._run('make install')
 
