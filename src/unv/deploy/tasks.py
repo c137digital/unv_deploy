@@ -208,11 +208,20 @@ class DeployTasks(Tasks):
             finally:
                 render_path.unlink()
 
-    async def _download_and_unpack(self, url: str, dest_dir: Path = Path('.')):
+    async def _download_and_unpack(
+            self, url: str, dest_dir: Path = Path('.'),
+            archive_dir_name: str = ''):
         await self._run(f'wget -q {url}')
         archive = url.split('/')[-1]
         await self._run(f'tar xf {archive}')
-        archive_dir = archive.split('.tar')[0]
+        archive_dir = archive_dir_name or archive.split('.tar')[0]
+
+        if '*' in archive_dir:
+            new_archive_dir = await self._run(
+                f"ls -d */ | grep '{archive_dir}'")
+            if not new_archive_dir:
+                raise ValueError(f'No archive dir found {new_archive_dir}')
+            archive_dir = new_archive_dir.rstrip('/')
 
         await self._mkdir(dest_dir)
         await self._run(f'mv {archive_dir}/* {dest_dir}')
