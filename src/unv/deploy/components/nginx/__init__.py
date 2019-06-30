@@ -30,6 +30,14 @@ class NginxSettings(DeployComponentSettings):
             'type': 'dict',
             'required': False
         },
+        'geoip2db': {
+            'type': 'dict',
+            'schema': {
+                'city': {'type': 'string', 'required': True},
+                'country': {'type': 'string', 'required': True}
+            },
+            'required': True
+        },
         'configs': {'type': 'dict'},
         'connections': {'type': 'integer', 'required': True},
         'workers': {'type': 'integer', 'required': True},
@@ -68,10 +76,16 @@ class NginxSettings(DeployComponentSettings):
             'geoip2': 'https://github.com/leev/ngx_http_geoip2_'
                 'module/archive/master.tar.gz',
             'libmaxminddb': 'https://github.com/maxmind/libmaxminddb/releases'
-                '/download/1.3.2/libmaxminddb-1.3.2.tar.gz'
+                '/download/1.3.2/libmaxminddb-1.3.2.tar.gz',
         },
         'packages_dir': {
             'geoip2': 'ngx_http_geoip2_module-master',
+        },
+        'geoip2db': {
+            'city': 'https://geolite.maxmind.com/download/geoip/database/'
+                'GeoLite2-City.tar.gz',
+            'country': 'https://geolite.maxmind.com/download/geoip/database/'
+                'GeoLite2-Country.tar.gz'
         },
         'configs': {'server.conf': 'nginx.conf'},
         'connections': 1000,
@@ -85,10 +99,8 @@ class NginxSettings(DeployComponentSettings):
         'access_log': 'logs/access.log',
         'error_log': 'logs/error.log',
         'default_type': 'application/octet-stream',
-        'geoip2': True,
-        'iptables': {
-            'v4': 'ipv4.rules'
-        }
+        'geoip2': False,
+        'iptables': {'v4': 'ipv4.rules'}
     }
 
     @property
@@ -163,6 +175,22 @@ class NginxSettings(DeployComponentSettings):
         return self._data['geoip2']
 
     @property
+    def geoip2_city_path(self):
+        return self.root_abs / 'geoip2' / 'GeoLite2-City.mmdb'
+
+    @property
+    def geoip2_country_path(self):
+        return self.root_abs / 'geoip2' / 'GeoLite2-Country.mmdb'
+
+    @property
+    def geoip2db_city_url(self):
+        return self._data['geoip2db']['city']
+
+    @property
+    def geoip2db_country_url(self):
+        return self._data['geoip2db']['country']
+
+    @property
     def iptables_v4_rules(self):
         return (self.local_root / self._data['iptables']['v4']).read_text()
 
@@ -206,6 +234,19 @@ class NginxTasks(DeployComponentTasks, SystemdTasksMixin):
 
         if self.settings.geoip2:
             await self._install_libmaxminddb()
+
+            async with self._cd(self.settings.root):
+                await self._mkdir('geoip2')
+                async with self._cd('geoip2'):
+                    await self._download_and_unpack(
+                        self.settings.geoip2db_city_url,
+                        archive_dir_name='GeoLite2-City_*'
+                    )
+                    await self._download_and_unpack(
+                        self.settings.geoip2db_country_url,
+                        archive_dir_name='GeoLite2-Country_*'
+                    )
+                    await self._run('rm *.txt')
 
         async with self._cd(self.settings.build, temporary=True):
             for package, url in self.settings.packages.items():
