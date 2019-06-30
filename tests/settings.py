@@ -20,6 +20,11 @@ SETTINGS = ComponentSettings.create({
                 'systemd': {
                     'instances': {'count': 0, 'percent': 50}
                 }
+            },
+            'nginx': {
+                'geoip2db': {
+                    'lang': 'ru'
+                }
             }
         }
     }

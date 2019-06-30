@@ -34,7 +34,12 @@ class NginxSettings(DeployComponentSettings):
             'type': 'dict',
             'schema': {
                 'city': {'type': 'string', 'required': True},
-                'country': {'type': 'string', 'required': True}
+                'country': {'type': 'string', 'required': True},
+                'lang': {
+                    'type': 'string',
+                    'required': True,
+                    'allowed': ['en', 'ru']
+                }
             },
             'required': True
         },
@@ -85,7 +90,8 @@ class NginxSettings(DeployComponentSettings):
             'city': 'https://geolite.maxmind.com/download/geoip/database/'
                 'GeoLite2-City.tar.gz',
             'country': 'https://geolite.maxmind.com/download/geoip/database/'
-                'GeoLite2-Country.tar.gz'
+                'GeoLite2-Country.tar.gz',
+            'lang': 'en'
         },
         'configs': {'server.conf': 'nginx.conf'},
         'connections': 1000,
@@ -181,6 +187,10 @@ class NginxSettings(DeployComponentSettings):
     @property
     def geoip2_country_path(self):
         return self.root_abs / 'geoip2' / 'GeoLite2-Country.mmdb'
+
+    @property
+    def geoip2_lang(self):
+        return self._data['geoip2db']['lang']
 
     @property
     def geoip2db_city_url(self):
