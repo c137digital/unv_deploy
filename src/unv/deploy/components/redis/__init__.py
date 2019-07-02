@@ -51,6 +51,8 @@ class RedisSettings(DeployComponentSettings):
             'template': 'server.conf',
             'name': 'redis.conf'
         },
+
+        # TODO: move to base config (base package for this type of components)
         'workdir': '.',
         'port': 6379,
         'maxmemory': '128mb',
@@ -112,7 +114,7 @@ class RedisTasks(DeployComponentTasks, SystemdTasksMixin):
     SETTINGS = RedisSettings()
 
     # TODO: add packages
-    # TODO: install sysfs kernel params
+    # TODO: add kernel systemd tasks to run settings on boot
     # # /proc/sys/net/core/somaxconn to 5000 (need command)
     async def get_iptables_template(self):
         return self.settings.iptables_v4_rules
