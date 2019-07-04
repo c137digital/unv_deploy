@@ -73,16 +73,18 @@ class DeployComponentSettings:
     NAME = ''
     DEFAULT = {}
     SCHEMA = {}
+    SETTINGS = SETTINGS
 
     def __init__(self, settings=None, root=None):
+        cls = self.__class__
         if settings is None:
-            settings = SETTINGS.get_component_settings(self.__class__.NAME)
+            settings = cls.SETTINGS.get_component_settings(cls.NAME)
         settings = update_dict_recur(
-            copy.deepcopy(self.__class__.DEFAULT), settings)
-        settings = validate_schema(self.__class__.SCHEMA, settings)
+            copy.deepcopy(cls.DEFAULT), settings)
+        settings = validate_schema(cls.SCHEMA, settings)
 
         self._data = settings
-        self.local_root = root or Path(inspect.getfile(self.__class__)).parent
+        self.local_root = root or Path(inspect.getfile(cls)).parent
 
     @property
     def user(self):
@@ -92,7 +94,7 @@ class DeployComponentSettings:
     def enabled(self):
         if 'enabled' in self._data:
             return self._data['enabled']
-        for _, host in SETTINGS.get_hosts():
+        for _, host in self.__class__.SETTINGS.get_hosts():
             if self.__class__.NAME in host['components']:
                 return True
         return False

@@ -110,8 +110,11 @@ class RedisSettings(DeployComponentSettings):
         return (self.local_root / self._data['iptables']['v4']).read_text()
 
 
+SETTINGS = RedisSettings()
+
+
 class RedisTasks(DeployComponentTasks, SystemdTasksMixin):
-    SETTINGS = RedisSettings()
+    SETTINGS = SETTINGS
 
     # TODO: add packages
     # TODO: add kernel systemd tasks to run settings on boot
