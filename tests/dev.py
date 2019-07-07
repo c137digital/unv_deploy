@@ -26,6 +26,22 @@ SETTINGS = ComponentSettings.create({
                     'lang': 'ru'
                 }
             }
+        },
+        'tags': {
+            'test_tag': {
+                'app': {
+                    # TODO: updated per host config globally (settings patched)
+                    # even deploy settings, so ve can mark tags to deploy
+                    'components': [],
+                    'deploy': {
+                        'nginx': {
+                            'geoip2db': {
+                                'lang': 'en'
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 })

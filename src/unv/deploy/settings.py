@@ -25,6 +25,7 @@ class DeploySettings(ComponentSettings):
                     'private_ip': {'type': 'string'},
                     'port': {'type': 'integer'},
                     'provider': {'type': 'string'},
+                    'tags': {'type': 'string'},
                     'components': {
                         'type': 'list',
                         'schema': {'type': 'string'}
@@ -32,12 +33,14 @@ class DeploySettings(ComponentSettings):
                 }
             }
         },
-        'components': {'required': True, 'allow_unknown': True}
+        'components': {'required': True, 'allow_unknown': True},
+        'tags': {'type': 'dict'}
     }
     DEFAULT = {
         'tasks': [],
         'hosts': {},
         'components': {},
+        'tags': {}
     }
 
     def get_hosts(self, component=''):
@@ -59,6 +62,9 @@ class DeploySettings(ComponentSettings):
     def get_component_settings(self, name):
         return self._data['components'].get(name, {})
 
+    def get_tags_settings(self, name):
+        return self._data['tags'].get(name, {})
+
     @property
     def task_classes(self):
         for module_path in self._data['tasks']:
@@ -79,8 +85,11 @@ class DeployComponentSettings:
         cls = self.__class__
         if settings is None:
             settings = cls.SETTINGS.get_component_settings(cls.NAME)
+        tags_settings = cls.SETTINGS.get_tags_settings(cls.NAME)
         settings = update_dict_recur(
             copy.deepcopy(cls.DEFAULT), settings)
+        settings = update_dict_recur(
+            copy.deepcopy(tags_settings), settings)
         settings = validate_schema(cls.SCHEMA, settings)
 
         self._data = settings
