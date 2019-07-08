@@ -10,10 +10,18 @@ SETTINGS = ComponentSettings.create({
             'unv.deploy.components.redis:RedisTasks'
         ],
         'hosts': {
-            'vagrant': {
-                'public_ip': '10.10.10.10',
-                'components': ['app', 'nginx', 'iptables', 'redis']
-            }
+            'vagrant.1': {
+                'public_ip': '10.10.20.10',
+                'components': ['app', 'nginx', 'iptables', 'redis'],
+                # 'tags': ['app_settings_1'],
+                'provider': 'vagrant'
+            },
+            'vagrant.2': {
+                'public_ip': '10.10.20.11',
+                'components': ['app', 'nginx', 'iptables', 'redis'],
+                # 'tags': ['app_settings_2'],
+                'provider': 'vagrant'
+            },
         },
         'components': {
             'app': {
@@ -26,22 +34,22 @@ SETTINGS = ComponentSettings.create({
                     'lang': 'ru'
                 }
             }
-        },
-        'tags': {
-            'test_tag': {
-                'app': {
-                    # TODO: updated per host config globally (settings patched)
-                    # even deploy settings, so ve can mark tags to deploy
-                    'components': [],
-                    'deploy': {
-                        'nginx': {
-                            'geoip2db': {
-                                'lang': 'en'
-                            }
-                        }
-                    }
-                }
-            }
         }
+        # 'tags': {
+        #     'test_tag': {
+        #         'app': {
+        #             # TODO: updated per host config globally (settings patched)
+        #             # even deploy settings, so ve can mark tags to deploy
+        #             'components': [],
+        #             'deploy': {
+        #                 'nginx': {
+        #                     'geoip2db': {
+        #                         'lang': 'en'
+        #                     }
+        #                 }
+        #             }
+        #         }
+        #     }
+        # }
     }
 })
