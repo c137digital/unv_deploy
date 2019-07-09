@@ -3,5 +3,3 @@ class VagrantProvider:
     # def setup()
     # generate config
     # start machine
-    # before command check server online and start vagrant
-    # def 

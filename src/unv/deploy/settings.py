@@ -25,7 +25,7 @@ class DeploySettings(ComponentSettings):
                     'private_ip': {'type': 'string'},
                     'port': {'type': 'integer'},
                     'provider': {'type': 'string'},
-                    'tags': {'type': 'string'},
+                    'tags': {'type': 'list', 'schema': {'type': 'string'}},
                     'components': {
                         'type': 'list',
                         'schema': {'type': 'string'}
