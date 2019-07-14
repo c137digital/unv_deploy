@@ -189,8 +189,8 @@ class DeployTasks(Tasks):
         exclude = [f"--exclude '{path}'" for path in exclude or []]
         exclude = ' '.join(exclude)
         await self._local(
-            f'rsync -rave ssh --delete {exclude} {local_dir}/ '
-            f'{self.user}@{self.public_ip}:{root_dir}'
+            f'rsync -rave "ssh -p {self.port}" --delete {exclude} '
+            f'{local_dir}/ {self.user}@{self.public_ip}:{root_dir}'
         )
 
     async def _upload_template(
