@@ -123,6 +123,7 @@ class AppTasks(DeployComponentTasks, SystemdTasksMixin):
         version = (await self._local('python setup.py --version')).strip()
         package = f'{name}-{version}.tar.gz'
 
+        # once for all deploy
         async with self._lock:
             await self._local('pip install -e .')
             await self._local('python setup.py sdist bdist_wheel')
@@ -131,7 +132,11 @@ class AppTasks(DeployComponentTasks, SystemdTasksMixin):
 
         await self._python.pip(f'install {flag} {package}')
         await self._rmrf(Path(package))
+
+        # generate app settings from deploy settings with create command
+        # pop deploy settings
         await self._rsync(Path('secure'), Path('secure'))
+        
         await self._sync_systemd_units()
 
     @register

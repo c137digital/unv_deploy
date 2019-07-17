@@ -26,6 +26,7 @@ class DeploySettings(ComponentSettings):
                     'port': {'type': 'integer'},
                     'provider': {'type': 'string'},
                     'tags': {'type': 'list', 'schema': {'type': 'string'}},
+                    'settings': {'type': 'dict', 'required': False},
                     'components': {
                         'type': 'list',
                         'schema': {'type': 'string'}
@@ -91,6 +92,8 @@ class DeployComponentSettings:
         settings = update_dict_recur(
             copy.deepcopy(tags_settings), settings)
         settings = validate_schema(cls.SCHEMA, settings)
+
+        # TODO: how to use settings per host configuration
 
         self._data = settings
         self.local_root = root or Path(inspect.getfile(cls)).parent
