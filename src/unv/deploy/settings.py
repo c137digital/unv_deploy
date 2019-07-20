@@ -61,10 +61,14 @@ class DeploySettings(ComponentSettings):
         return self._data.get(name, {}).get('user', name)
 
     def get_component_settings(self, name):
-        return self._data['components'].get(name, {})
+        component_settings = self._data['components'].get(name, {})
+        self._data['components']
 
-    def get_tags_settings(self, name):
-        return self._data['tags'].get(name, {})
+    # tag settings (?) or patch directly by syncing folder
+    # def get_tags_settings(self, name):
+    #     return self._data['tags'].get(name, {})
+
+    # FIXME: add set_host_settings context
 
     @property
     def task_classes(self):
@@ -86,11 +90,10 @@ class DeployComponentSettings:
         cls = self.__class__
         if settings is None:
             settings = cls.SETTINGS.get_component_settings(cls.NAME)
-        tags_settings = cls.SETTINGS.get_tags_settings(cls.NAME)
-        settings = update_dict_recur(
-            copy.deepcopy(cls.DEFAULT), settings)
-        settings = update_dict_recur(
-            copy.deepcopy(tags_settings), settings)
+        # tags_settings = cls.SETTINGS.get_tags_settings(cls.NAME)
+        settings = update_dict_recur(cls.DEFAULT, settings, copy=True)
+        # settings = update_dict_recur(
+        #     copy.deepcopy(tags_settings), settings)
         settings = validate_schema(cls.SCHEMA, settings)
 
         # TODO: how to use settings per host configuration
