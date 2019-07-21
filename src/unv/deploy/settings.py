@@ -146,3 +146,12 @@ class DeployComponentSettings:
     @property
     def root_abs(self):
         return self.home_abs / self._data['root']
+
+    def apply_host_settings(self, public_ip, private_ip):
+        # copy old settings
+        # apply tags settings
+        # apply host component settings
+        pass
+
+    def clear_host_settings(self):
+        pass

@@ -3,6 +3,7 @@ from ..settings import DeployComponentSettings
 
 
 class PythonSettings(DeployComponentSettings):
+    # TODO: move to own package
     NAME = 'python'
     SCHEMA = {
         'root': {'type': 'string', 'required': True},
