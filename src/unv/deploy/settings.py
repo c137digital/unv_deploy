@@ -61,12 +61,13 @@ class DeploySettings(ComponentSettings):
         return self._data.get(name, {}).get('user', name)
 
     def get_component_settings(self, name):
-        component_settings = self._data['components'].get(name, {})
-        self._data['components']
+        return self._data['components'].get(name, {})
 
-    # tag settings (?) or patch directly by syncing folder
-    # def get_tags_settings(self, name):
-    #     return self._data['tags'].get(name, {})
+    def get_tags_settings(self, name):
+        return self._data['tags'].get(name, {})
+
+    def get_host_settings(self, public_ip, private_ip):
+        return
 
     # FIXME: add set_host_settings context
 
@@ -90,13 +91,7 @@ class DeployComponentSettings:
         cls = self.__class__
         if settings is None:
             settings = cls.SETTINGS.get_component_settings(cls.NAME)
-        # tags_settings = cls.SETTINGS.get_tags_settings(cls.NAME)
-        settings = update_dict_recur(cls.DEFAULT, settings, copy=True)
-        # settings = update_dict_recur(
-        #     copy.deepcopy(tags_settings), settings)
         settings = validate_schema(cls.SCHEMA, settings)
-
-        # TODO: how to use settings per host configuration
 
         self._data = settings
         self.local_root = root or Path(inspect.getfile(cls)).parent

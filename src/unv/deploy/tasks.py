@@ -254,6 +254,7 @@ class DeployComponentTasks(DeployTasks):
                 f"[{settings}] value and type {type(settings)}"
             )
         self.settings = settings
+        # set host settings here (?)
         super().__init__(manager, lock, self.settings.user, host)
 
     @classmethod
