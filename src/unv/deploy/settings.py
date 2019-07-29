@@ -69,8 +69,6 @@ class DeploySettings(ComponentSettings):
     def get_host_settings(self, public_ip, private_ip):
         return
 
-    # FIXME: add set_host_settings context
-
     @property
     def task_classes(self):
         for module_path in self._data['tasks']:
@@ -85,7 +83,6 @@ class DeployComponentSettings:
     NAME = ''
     DEFAULT = {}
     SCHEMA = {}
-    SETTINGS = SETTINGS
 
     def __init__(self, settings=None, root=None):
         cls = self.__class__
@@ -142,7 +139,7 @@ class DeployComponentSettings:
     def root_abs(self):
         return self.home_abs / self._data['root']
 
-    def apply_host_settings(self, public_ip, private_ip):
+    def get_per_host_settings_copy(self, host):
         # copy old settings
         # apply tags settings
         # apply host component settings

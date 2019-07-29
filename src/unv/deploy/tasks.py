@@ -250,11 +250,11 @@ class DeployComponentTasks(DeployTasks):
                 not isinstance(settings, DeployComponentSettings):
             raise ValueError(
                 "Provide correct 'SETTINGS' value "
-                "shoult be an instance of class 'DeployComponentSettings' not "
+                "should be an instance of class 'DeployComponentSettings' not "
                 f"[{settings}] value and type {type(settings)}"
             )
-        self.settings = settings
-        # set host settings here (?)
+        self.settings = settings.get_per_host_settings_copy(host)
+
         super().__init__(manager, lock, self.settings.user, host)
 
     @classmethod
