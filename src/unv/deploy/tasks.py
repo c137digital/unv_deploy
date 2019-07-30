@@ -253,7 +253,7 @@ class DeployComponentTasks(DeployTasks):
                 "should be an instance of class 'DeployComponentSettings' not "
                 f"[{settings}] value and type {type(settings)}"
             )
-        self.settings = settings.get_per_host_settings_copy(host)
+        self.settings = settings.create_host_settings_copy(host)
 
         super().__init__(manager, lock, self.settings.user, host)
 
@@ -287,7 +287,7 @@ class DeployTasksManager(TasksManager):
                     hosts_per_index.append([host_name, host])
                     print(f" ({index}) - {host_name} [{host['public_ip']}]")
                 chosen_index = int(input('Please choose host to run task: '))
-                hosts = [hosts_per_index[chosen_index]]
+                hosts = [hosts_per_index[chosen_index + 1]]
 
             async def run():
                 lock = asyncio.Lock()

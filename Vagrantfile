@@ -17,12 +17,17 @@ Vagrant.configure("2") do |config|
         inline: "echo #{ssh_pub_key} >> /home/vagrant/.ssh/authorized_keys",
         privileged: false
 
-    config.vm.define "unvdeploy" do |app|
-        ip = "10.10.10.10"
-        app.vm.network "private_network", ip: ip
-        app.vm.hostname = "unvdeploy"
+    config.vm.define "unvdeploy.test.1" do |app|
+        app.vm.network "private_network", ip: "10.10.30.10"
         app.vm.provider "virtualbox" do |v|
-            v.name = 'unv_deploy'
+            v.name = 'unv_deploy_test_1'
+        end
+    end
+
+    config.vm.define "unvdeploy.test.2" do |app|
+        app.vm.network "private_network", ip: "10.10.30.11"
+        app.vm.provider "virtualbox" do |v|
+            v.name = 'unv_deploy_test_2'
         end
     end
 end

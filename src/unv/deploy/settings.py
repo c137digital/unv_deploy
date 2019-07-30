@@ -66,8 +66,16 @@ class DeploySettings(ComponentSettings):
     def get_tags_settings(self, name):
         return self._data['tags'].get(name, {})
 
-    def get_host_settings(self, public_ip, private_ip):
-        return
+    def get_host_override_settings(self, host):
+        for value in self._data['hosts'].values():
+            if value['private_ip'] == host['private_ip'] and \
+                    value['public_ip'] == host['public_ip']:
+
+                settings = {}
+                for tag in value.get('tags', []):
+                    tag_settings = self.get_tags_settings(tag)
+                    settings = update_dict_recur(settings, tag_settings)
+                return update_dict_recur(settings, value.get('settings', {}))
 
     @property
     def task_classes(self):
@@ -84,14 +92,16 @@ class DeployComponentSettings:
     DEFAULT = {}
     SCHEMA = {}
 
-    def __init__(self, settings=None, root=None):
+    def __init__(self, settings=None):
         cls = self.__class__
         if settings is None:
-            settings = cls.SETTINGS.get_component_settings(cls.NAME)
+            settings = SETTINGS.get_component_settings(cls.NAME)
+
+        settings = update_dict_recur(cls.DEFAULT, settings, copy=True)
         settings = validate_schema(cls.SCHEMA, settings)
 
+        self.local_root = Path(inspect.getfile(cls)).parent
         self._data = settings
-        self.local_root = root or Path(inspect.getfile(cls)).parent
 
     @property
     def user(self):
@@ -101,7 +111,7 @@ class DeployComponentSettings:
     def enabled(self):
         if 'enabled' in self._data:
             return self._data['enabled']
-        for _, host in self.__class__.SETTINGS.get_hosts():
+        for _, host in SETTINGS.get_hosts():
             if self.__class__.NAME in host['components']:
                 return True
         return False
@@ -139,11 +149,12 @@ class DeployComponentSettings:
     def root_abs(self):
         return self.home_abs / self._data['root']
 
-    def get_per_host_settings_copy(self, host):
-        # copy old settings
-        # apply tags settings
-        # apply host component settings
-        pass
-
-    def clear_host_settings(self):
-        pass
+    @classmethod
+    def create_host_settings_copy(cls, host):
+        host_settings = SETTINGS.get_host_override_settings(host)
+        host_settings = host_settings.get(cls.NAME, {})
+        settings = update_dict_recur(
+            SETTINGS.get_component_settings(cls.NAME),
+            host_settings, copy=True
+        )
+        return cls(settings)
