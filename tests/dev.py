@@ -22,18 +22,7 @@ SETTINGS = ComponentSettings.create({
                 'public_ip': '10.10.30.11',
                 'components': ['vagrant', 'web', 'iptables', 'redis'],
                 'provider': 'vagrant'
-            },
-            'test.3': {
-                'public_ip': '10.10.30.12',
-                'components': ['vagrant', 'app', 'nginx'],
-                'settings': {
-                    'nginx': {
-                        'geoip2db': {'lang': 'en'},
-                        'subproxy': True,
-                    }
-                },
-                'provider': 'vagrant'
-            },
+            }
         },
         'components': {
             'app': {
