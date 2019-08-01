@@ -31,6 +31,7 @@ class RedisSettings(DeployComponentSettings):
             },
             'required': True
         },
+        'listen_private_ip': {'type': 'boolean', 'required': False},
         'iptables': {
             'type': 'dict',
             'schema': {
@@ -108,6 +109,10 @@ class RedisSettings(DeployComponentSettings):
     @property
     def iptables_v4_rules(self):
         return (self.local_root / self._data['iptables']['v4']).read_text()
+
+    @property
+    def listen_private_ip(self):
+        return self._data.get('listen_private_ip', False)
 
 
 SETTINGS = RedisSettings()
