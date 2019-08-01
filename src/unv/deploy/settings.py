@@ -149,12 +149,9 @@ class DeployComponentSettings:
     def root_abs(self):
         return self.home_abs / self._data['root']
 
-    @classmethod
-    def create_host_settings_copy(cls, host):
+    def create_host_settings_copy(self, host):
+        cls = self.__class__
         host_settings = SETTINGS.get_host_override_settings(host)
         host_settings = host_settings.get(cls.NAME, {})
-        settings = update_dict_recur(
-            SETTINGS.get_component_settings(cls.NAME),
-            host_settings, copy=True
-        )
+        settings = update_dict_recur(self._data, host_settings, copy=True)
         return cls(settings)
