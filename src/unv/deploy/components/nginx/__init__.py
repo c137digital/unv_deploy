@@ -278,7 +278,7 @@ class NginxTasks(DeployComponentTasks, SystemdTasksMixin):
                     "--with-pcre-jit --with-zlib=../zlib "
                     "--with-openssl=../openssl --with-http_ssl_module "
                     "--with-http_v2_module --with-threads "
-                    "--with-file-aio "
+                    "--with-file-aio --with-http_realip_module "
                 )
                 if self.settings.geoip2:
                     build_command += '--add-module=../geoip2 '
