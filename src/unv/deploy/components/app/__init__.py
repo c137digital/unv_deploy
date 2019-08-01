@@ -136,7 +136,7 @@ class AppTasks(DeployComponentTasks, SystemdTasksMixin):
         # generate app settings from deploy settings with create command
         # pop deploy settings
         await self._rsync(Path('secure'), Path('secure'))
-        
+
         await self._sync_systemd_units()
 
     @register
