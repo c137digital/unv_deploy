@@ -30,6 +30,7 @@ class VagrantTasks(Tasks):
         # TODO: add config path to run commands from other dirs
         await self._local('vagrant destroy -f')
         await self._local('vagrant up')
+        await self._local('vagrant status')
         await self.update_hosts()
 
     @register
