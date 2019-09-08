@@ -14,7 +14,7 @@ SETTINGS = ComponentSettings.create({
                 'public_ip': '10.10.30.10',
                 'components': ['vagrant', 'nginx', 'iptables', 'redis'],
                 'settings': {
-                    'nginx': {'geoip2db': {'lang': 'ru'}}
+                    'nginx': {'geoip2db': {'lang': 'en'}}
                 },
                 'provider': 'vagrant'
             },

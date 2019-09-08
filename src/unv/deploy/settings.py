@@ -66,7 +66,7 @@ class DeploySettings(ComponentSettings):
     def get_tags_settings(self, name):
         return self._data['tags'].get(name, {})
 
-    def get_host_override_settings(self, host):
+    def get_host_override_settings(self, host) -> dict:
         for value in self._data['hosts'].values():
             if value['private_ip'] == host['private_ip'] and \
                     value['public_ip'] == host['public_ip']:
@@ -76,6 +76,7 @@ class DeploySettings(ComponentSettings):
                     tag_settings = self.get_tags_settings(tag)
                     settings = update_dict_recur(settings, tag_settings)
                 return update_dict_recur(settings, value.get('settings', {}))
+        return {}
 
     @property
     def task_classes(self):
