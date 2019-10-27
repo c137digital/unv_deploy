@@ -29,6 +29,21 @@ setup(
         'jinja2',
         'watchgod'
     ],
+    extras_require={
+        'dev': [
+            'pylint',
+            'pycodestyle',
+            'pytest',
+            'pytest-cov',
+            'pytest-env',
+            'pytest-pythonpath',
+            'autopep8',
+            'sphinx',
+            'twine',
+            'setuptools',
+            'wheel'
+        ]
+    },
     zip_safe=True,
     entry_points={
         'console_scripts': [
