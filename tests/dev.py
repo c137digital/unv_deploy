@@ -7,12 +7,14 @@ SETTINGS = ComponentSettings.create({
             'unv.deploy.components.app:AppTasks',
             'unv.deploy.components.vagrant:VagrantTasks',
             'unv.deploy.components.iptables:IPtablesTasks',
-            'unv.deploy.components.redis:RedisTasks'
+            'unv.deploy.components.redis:RedisTasks',
+            'unv.deploy.components.postgres:PostgresTasks'
         ],
         'hosts': {
             'test.1': {
                 'public_ip': '10.10.30.10',
-                'components': ['vagrant', 'nginx', 'iptables', 'redis'],
+                'components': [
+                    'vagrant', 'nginx', 'iptables', 'redis', 'postgres'],
                 'settings': {
                     'nginx': {'geoip2db': {'lang': 'en'}}
                 },
