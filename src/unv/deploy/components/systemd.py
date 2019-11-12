@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from unv.utils.tasks import register
 
 
@@ -50,7 +52,7 @@ class SystemdTasksMixin:
 
             context = {'instance': service['instance']}.copy()
             context.update(service.get('context', {}))
-            path = service['template']
+            path = Path(service['template'])
             if not str(path).startswith('/'):
                 path = (self.settings.local_root / service['template'])
                 path = path.resolve()

@@ -2,14 +2,21 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Python: Cleanup Build",
+            "type": "shell",
+            "command": "rm -rf ./build && rm -rf ./dist && rm -rf src/*.egg-info"
+        },
+        {
             "label": "Python: Build",
             "type": "shell",
-            "command": "rm -rf ./build && rm -rf ./dist && rm -rf src/*.egg-info &&. activate.sh && python setup.py sdist bdist_wheel"
+            // "dependsOn": ["Python: Cleanup Build"],
+            "command": "source activate.sh && python setup.py sdist bdist_wheel"
         },
         {
             "label": "Python: Release package on PyPI",
             "type": "shell",
-            "command": ". activate.sh && twine upload dist/* -u mortyspace"
+            "dependsOn": ["Python: Build"],
+            "command": "source activate.sh && twine upload dist/* -u mortyspace"
         },
         {
             "label": "Prospector: Inspect",
