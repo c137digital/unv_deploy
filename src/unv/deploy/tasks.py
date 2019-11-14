@@ -156,15 +156,12 @@ class DeployTasks(Tasks):
             )
 
     async def _run(self, command, strip=True, interactive=False) -> str:
-        self._logger.debug(
-            f'run [{self.user}@{self.public_ip}:{self.port}] '
-            f'{self._current_prefix}{command}'
-        )
+        command = str(command).replace('"', r'\"')
         interactive_flag = '-t' if interactive else ''
         response = await self._local(
             f"ssh {interactive_flag} -p {self.port} "
             f"{self.user}@{self.public_ip} "
-            f"'{self._current_prefix}{command}'",
+            f'"{self._current_prefix}{command}"',
             interactive=interactive
         ) or ''
         if strip:
