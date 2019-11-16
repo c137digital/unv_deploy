@@ -110,7 +110,7 @@ class PostgresTasks(DeployComponentTasks, SystemdTasksMixin):
                 )
 
                 async with self._cd('contrib'):
-                    await self._run('make')
+                    await self._run('make -j$(nproc)')
 
                 # TODO: add custom contrib packages configuration
                 # for contrib in str(await self._run('ls contrib')).split():
@@ -118,7 +118,7 @@ class PostgresTasks(DeployComponentTasks, SystemdTasksMixin):
                 #     async with self._cd(f'contrib/{contrib}'):
                 #         await self._run('ls')
 
-                await self._run('make')
+                await self._run('make -j$(nproc)')
                 await self._run('make install')
 
     @register
