@@ -24,7 +24,7 @@ class PythonSettings(DeployComponentSettings):
         'version': '3.7.4',
         'build': {
             'fast': True,
-            'path': '/tmp/python'
+            'path': 'build'
         }
     }
 
@@ -38,7 +38,7 @@ class PythonSettings(DeployComponentSettings):
 
     @property
     def build_path(self):
-        return self._data['build']['path']
+        return self.home_abs / self._data['build']['path']
 
     @property
     def site_packages_abs(self):
