@@ -15,6 +15,7 @@ class PostgresSettings(DeployComponentSettings):
         'password': {'type': 'string', 'required': True},
         'build_dir': {'type': 'string', 'required': True},
         'data_dir': {'type': 'string', 'required': True},
+        'locale': {'type': 'string', 'required': True},
         'configs': {'type': 'list', 'schema': {'type': 'string'}},
         'sources': {
             'type': 'dict',
@@ -36,6 +37,7 @@ class PostgresSettings(DeployComponentSettings):
         'password': 'postgres',
         'build_dir': 'build',
         'data_dir': 'data',
+        'locale': 'en_US.UTF-8',
         'sources': {
             'postgres': 'https://ftp.postgresql.org/pub/source'
                         '/v12.1/postgresql-12.1.tar.gz',
@@ -82,6 +84,10 @@ class PostgresSettings(DeployComponentSettings):
         for config in self._data['configs']:
             yield config, self.local_root / config
 
+    @property
+    def locale(self):
+        return self._data['locale']
+
 
 class PostgresTasks(DeployComponentTasks, SystemdTasksMixin):
     SETTINGS = PostgresSettings()
@@ -125,7 +131,10 @@ class PostgresTasks(DeployComponentTasks, SystemdTasksMixin):
     @register
     async def make_data_dir(self):
         init_db_bin = self.settings.root_abs / 'bin' / 'initdb'
-        await self._run(f'{init_db_bin} -D {self.settings.data_dir}')
+        await self._run(
+            f'{init_db_bin} -D {self.settings.data_dir} '
+            f'--locale {self.settings.locale}'
+        )
 
     @register
     async def psql(self, command: str = ''):
