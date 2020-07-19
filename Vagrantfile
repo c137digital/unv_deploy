@@ -1,12 +1,25 @@
 Vagrant.configure("2") do |config|
-    config.vm.box = "generic/ubuntu1604"
+    name = 'unvdeploytest'
+
+    config.vm.box = "generic/debian10"
+    ip = "10.10.30.10"
+    memory = 512
+    cpus = 2
+    
     config.vm.provider "virtualbox" do |v|
-        v.memory = 256
-        v.cpus = 1
+        v.memory = memory
+        v.cpus = cpus
         v.customize ["modifyvm", :id, "--uartmode1", "disconnected"]
+        v.customize ["modifyvm", :id, "--vram", "12"]
     end
 
+    config.vm.provider "parallels" do |prl|
+        prl.memory = memory
+        prl.cpus = cpus
+      end
+
     config.vm.synced_folder ".", "/vagrant", disabled: true
+    
     ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
     config.ssh.insert_key = false
     config.vm.provision 'shell', inline: 'rm -rf /root/.ssh'
@@ -17,17 +30,17 @@ Vagrant.configure("2") do |config|
         inline: "echo #{ssh_pub_key} >> /home/vagrant/.ssh/authorized_keys",
         privileged: false
 
-    config.vm.define "unvdeploy.test.1" do |app|
-        app.vm.network "private_network", ip: "10.10.30.10"
-        app.vm.provider "virtualbox" do |v|
-            v.name = 'unv_deploy_test_1'
-        end
-    end
+    config.vm.define "app" do |app|
+        app.vm.network "private_network", ip: ip
+        app.vm.hostname = name
 
-    config.vm.define "unvdeploy.test.2" do |app|
-        app.vm.network "private_network", ip: "10.10.30.11"
         app.vm.provider "virtualbox" do |v|
-            v.name = 'unv_deploy_test_2'
+            v.name = name
+        end
+
+        app.vm.provider "parallels" do |v|
+            v.name = name
         end
     end
 end
+

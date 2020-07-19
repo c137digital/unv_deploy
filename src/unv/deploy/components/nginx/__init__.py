@@ -11,9 +11,10 @@ from ..systemd import SystemdTasksMixin
 class NginxSettings(DeployComponentSettings):
     NAME = 'nginx'
     SCHEMA = {
+        'user': {'type': 'string', 'required': False},
         'systemd': SystemdTasksMixin.SCHEMA,
-        'master': {'type': 'boolean', 'required': True},
         'root': {'type': 'string', 'required': True},
+        'master': {'type': 'boolean', 'required': True},
         'packages': {
             'type': 'dict',
             'schema': {

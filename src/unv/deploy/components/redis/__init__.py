@@ -11,6 +11,7 @@ from ..systemd import SystemdTasksMixin
 class RedisSettings(DeployComponentSettings):
     NAME = 'redis'
     SCHEMA = {
+        'user': {'type': 'string', 'required': False},
         'systemd': SystemdTasksMixin.SCHEMA,
         'config': {
             'type': 'dict',
@@ -56,7 +57,7 @@ class RedisSettings(DeployComponentSettings):
         # TODO: move to base config (base package for this type of components)
         'workdir': '.',
         'port': 6379,
-        'maxmemory': '128mb',
+        'maxmemory': '64mb',
         'databases': 16,
         'root': 'app',
         'packages': {

@@ -9,9 +9,9 @@ from unv.deploy.components.systemd import SystemdTasksMixin
 class PostgresSettings(DeployComponentSettings):
     NAME = 'postgres'
     SCHEMA = {
+        'user': {'type': 'string', 'required': False},
         'systemd': SystemdTasksMixin.SCHEMA,
         'root': {'type': 'string', 'required': True},
-        'user': {'type': 'string', 'required': True},
         'password': {'type': 'string', 'required': True},
         'build_dir': {'type': 'string', 'required': True},
         'data_dir': {'type': 'string', 'required': True},
@@ -32,7 +32,6 @@ class PostgresSettings(DeployComponentSettings):
             'boot': True,
             'instances': {'count': 1}
         },
-        'user': 'postgres',
         'root': 'app',
         'password': 'postgres',
         'build_dir': 'build',
@@ -110,7 +109,7 @@ class PostgresTasks(DeployComponentTasks, SystemdTasksMixin):
                 )
 
                 async with self._cd('contrib'):
-                    await self._run('make -j$(nproc)')
+                    await self._run('make')
 
                 # TODO: add custom contrib packages configuration
                 # for contrib in str(await self._run('ls contrib')).split():

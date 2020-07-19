@@ -14,6 +14,7 @@ from ..systemd import SystemdTasksMixin
 class AppSettings(DeployComponentSettings):
     NAME = 'app'
     SCHEMA = {
+        'user': {'type': 'string', 'required': False},
         'bin': {'type': 'string'},
         'instance': {'type': 'integer'},
         'settings': {'type': 'string'},
@@ -24,7 +25,8 @@ class AppSettings(DeployComponentSettings):
                 'dirs': {'type': 'list', 'schema': {'type': 'string'}},
                 'exclude': {'type': 'list', 'schema': {'type': 'string'}}
             }
-        }
+        },
+        'python': {'type': 'dict', 'schema': PythonSettings.SCHEMA}
     }
     DEFAULT = {
         'bin': 'app',
@@ -44,7 +46,8 @@ class AppSettings(DeployComponentSettings):
         'watch': {
             'dirs': ['./src', './secure'],
             'exclude': ['__pycache__', '*.egg-info']
-        }
+        },
+        'python': PythonSettings.DEFAULT
     }
 
     @property

@@ -13,18 +13,20 @@ SETTINGS = ComponentSettings.create({
         'hosts': {
             'test.1': {
                 'public_ip': '10.10.30.10',
+                'private_ip': '0.0.0.0',
                 'components': [
                     'vagrant', 'nginx', 'iptables', 'redis', 'postgres'],
                 'settings': {
-                    'nginx': {'geoip2db': {'lang': 'en'}}
+                    'nginx': {'geoip2db': {'lang': 'en'}},
+                    'redis': {'listen_private_ip': True}
                 },
                 'provider': 'vagrant'
             },
-            'test.2': {
-                'public_ip': '10.10.30.11',
-                'components': ['vagrant', 'web', 'iptables', 'redis'],
-                'provider': 'vagrant'
-            }
+            # 'test.2': {
+            #     'public_ip': '10.10.30.11',
+            #     'components': ['vagrant', 'web', 'iptables', 'redis'],
+            #     'provider': 'vagrant'
+            # }
         },
         'components': {
             'app': {
@@ -33,7 +35,7 @@ SETTINGS = ComponentSettings.create({
                 }
             },
             'nginx': {
-                'geoip2': True,
+                'geoip2': False,
                 'geoip2db': {
                     'lang': 'ru'
                 }
