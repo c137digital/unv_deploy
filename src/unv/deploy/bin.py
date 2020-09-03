@@ -26,6 +26,6 @@ def run():
         from .tasks import DeployTasksManager
         manager = DeployTasksManager()
         manager.register_from_settings()
-        manager.run(commands)
+        manager.run(*commands)
     finally:
         os.environ.pop('SETTINGS')
