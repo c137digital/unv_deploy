@@ -19,9 +19,13 @@ def run():
             continue
     if not module_path:
         raise ValueError(f'Settings "{name}" not found in modules {modules}')
-    os.environ['SETTINGS'] = module_path
+    
+    try:
+        os.environ['SETTINGS'] = module_path
 
-    from .tasks import DeployTasksManager
-    manager = DeployTasksManager()
-    manager.register_from_settings()
-    manager.run(' '.join(commands))
+        from .tasks import DeployTasksManager
+        manager = DeployTasksManager()
+        manager.register_from_settings()
+        manager.run(commands)
+    finally:
+        os.environ.pop('SETTINGS')
