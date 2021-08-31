@@ -1,4 +1,4 @@
-from ..tasks import DeployComponentTasks
+from ..tasks import DeployTasks
 from ..settings import DeployComponentSettings
 
 
@@ -21,7 +21,7 @@ class PythonSettings(DeployComponentSettings):
     DEFAULT = {
         'user': 'python',
         'root': 'python',
-        'version': '3.8.4',
+        'version': '3.9.6',
         'build': {
             'fast': True,
             'path': 'build'
@@ -48,7 +48,7 @@ class PythonSettings(DeployComponentSettings):
         )
 
 
-class PythonTasks(DeployComponentTasks):
+class PythonTasks(DeployTasks):
     SETTINGS = PythonSettings()
 
     async def pip(self, command: str):

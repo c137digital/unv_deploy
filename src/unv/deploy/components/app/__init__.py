@@ -4,7 +4,7 @@ from pathlib import Path
 
 from watchgod import awatch
 
-from ...tasks import DeployComponentTasks, nohost, register, onehost
+from ...tasks import DeployTasks, nohost, register, onehost
 from ...settings import SETTINGS, DeployComponentSettings
 
 from ..python import PythonTasks, PythonSettings
@@ -77,13 +77,14 @@ class AppSettings(DeployComponentSettings):
         return self._data['watch']['exclude']
 
 
-class AppTasks(DeployComponentTasks, SystemdTasksMixin):
+class AppTasks(DeployTasks, SystemdTasksMixin):
     SETTINGS = AppSettings()
 
-    def __init__(self, manager, lock, user, host, settings=None):
-        super().__init__(manager, lock, user, host, settings)
-        self._python = PythonTasks(
-            manager, lock, user, host, self.settings.python)
+    def __init__(self, manager, lock, host):
+        super().__init__(manager, lock, host)
+
+        # self._python = PythonTasks(
+        #     manager, lock, self.settings.python)
 
     @register
     @nohost
@@ -102,7 +103,7 @@ class AppTasks(DeployComponentTasks, SystemdTasksMixin):
                     for sub_dir in directory.iterdir():
                         if not sub_dir.is_dir():
                             continue
-                        await self._rsync(
+                        await self._upload(
                             sub_dir, site_packages_abs / sub_dir.name,
                             self.settings.watch_exclude
                         )
@@ -126,21 +127,22 @@ class AppTasks(DeployComponentTasks, SystemdTasksMixin):
         version = (await self._local('python setup.py --version')).strip()
         package = f'{name}-{version}.tar.gz'
 
-        # once for all deploy
-        async with self._lock:
-            await self._local('pip install -e .')
-            await self._local('python setup.py sdist bdist_wheel')
-            await self._upload(Path('dist', package))
-            await self._local('rm -rf ./build ./dist')
-
+        await self._upload(Path('dist', package))
         await self._python.pip(f'install {flag} {package}')
         await self._rmrf(Path(package))
-
-        # generate app settings from deploy settings with create command
-        # pop deploy settings
-        await self._rsync(Path('secure'), Path('secure'))
+        await self._upload(Path('secure'), Path('secure'))
 
         await self._sync_systemd_units()
+
+    @sync.before
+    async def sync(self):
+        await self._local('rm -rf ./build ./dist')
+        await self._local('pip install -e .')
+        await self._local('python setup.py sdist bdist_wheel')
+
+    @sync.after
+    async def sync(self):
+        await self._local('rm -rf ./build ./dist')
 
     @register
     async def setup(self):

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from unv.deploy.tasks import (
-    DeployComponentSettings, DeployComponentTasks, register
+    DeployComponentSettings, DeployTasks, register
 )
 from unv.deploy.components.systemd import SystemdTasksMixin
 
@@ -24,6 +24,13 @@ class PostgresSettings(DeployComponentSettings):
             },
             'required': True
         },
+        'iptables': {
+            'type': 'dict',
+            'schema': {
+                'v4': {'type': 'string', 'required': True},
+            },
+            'required': True
+        },
     }
     DEFAULT = {
         'systemd': {
@@ -39,9 +46,12 @@ class PostgresSettings(DeployComponentSettings):
         'locale': 'en_US.UTF-8',
         'sources': {
             'postgres': 'https://ftp.postgresql.org/pub/source'
-                        '/v12.1/postgresql-12.1.tar.gz',
+                        '/v13.4/postgresql-13.4.tar.gz',
         },
         'configs': ['pg_hba.conf', 'postgresql.conf'],
+        'iptables': {
+            'v4': 'ipv4.rules'
+        },
         # 'databases': {
         #     'user_name': 'db1'
         # }
@@ -86,10 +96,17 @@ class PostgresSettings(DeployComponentSettings):
     @property
     def locale(self):
         return self._data['locale']
+    
+    @property
+    def iptables_v4_rules(self):
+        return (self.local_root / self._data['iptables']['v4']).read_text()
 
 
-class PostgresTasks(DeployComponentTasks, SystemdTasksMixin):
+class PostgresTasks(DeployTasks, SystemdTasksMixin):
     SETTINGS = PostgresSettings()
+    
+    async def get_iptables_template(self):
+        return self.settings.iptables_v4_rules
 
     @register
     async def build(self):

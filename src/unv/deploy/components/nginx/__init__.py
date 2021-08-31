@@ -2,7 +2,7 @@ from pathlib import Path
 
 from unv.utils.tasks import register
 
-from ...tasks import DeployComponentTasks, as_root
+from ...tasks import DeployTasks, as_root
 from ...settings import DeployComponentSettings
 
 from ..systemd import SystemdTasksMixin
@@ -75,10 +75,10 @@ class NginxSettings(DeployComponentSettings):
         'master': True,
         'root': 'app',
         'packages': {
-            'nginx': 'http://nginx.org/download/nginx-1.17.1.tar.gz',
-            'pcre': 'https://ftp.pcre.org/pub/pcre/pcre-8.42.tar.gz',
+            'nginx': 'http://nginx.org/download/nginx-1.21.1.tar.gz',
+            'pcre': 'https://ftp.pcre.org/pub/pcre/pcre-8.45.tar.gz',
             'zlib': 'http://www.zlib.net/zlib-1.2.11.tar.gz',
-            'openssl': 'https://www.openssl.org/source/openssl-1.1.1a.tar.gz',
+            'openssl': 'https://www.openssl.org/source/openssl-1.1.1l.tar.gz',
             'geoip2': 'https://github.com/leev/ngx_http_geoip2_'
                 'module/archive/master.tar.gz',
             'libmaxminddb': 'https://github.com/maxmind/libmaxminddb/releases'
@@ -206,7 +206,7 @@ class NginxSettings(DeployComponentSettings):
         return (self.local_root / self._data['iptables']['v4']).read_text()
 
 
-class NginxTasks(DeployComponentTasks, SystemdTasksMixin):
+class NginxTasks(DeployTasks, SystemdTasksMixin):
     SETTINGS = NginxSettings()
 
     async def get_iptables_template(self):

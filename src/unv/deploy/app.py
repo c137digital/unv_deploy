@@ -1,5 +1,5 @@
-# must be available for import to include in 'components' settings
+from .tasks import DEPLOY_TASKS_MANAGER
 
 
 def setup(app):
-    pass
+    app.register(DEPLOY_TASKS_MANAGER)

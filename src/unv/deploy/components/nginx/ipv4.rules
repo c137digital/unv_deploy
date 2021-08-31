@@ -1,4 +1,2 @@
 -A INPUT -p tcp --dport 80 -j ACCEPT
-{%- if deploy.settings.use_https and deploy.settings.master %}
 -A INPUT -p tcp --dport 443 -j ACCEPT
-{%- endif %}

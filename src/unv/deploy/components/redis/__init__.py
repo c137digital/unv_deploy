@@ -2,7 +2,7 @@ from pathlib import Path
 
 from unv.utils.tasks import register
 
-from ...tasks import DeployComponentTasks
+from ...tasks import DeployTasks
 from ...settings import DeployComponentSettings
 
 from ..systemd import SystemdTasksMixin
@@ -57,11 +57,11 @@ class RedisSettings(DeployComponentSettings):
         # TODO: move to base config (base package for this type of components)
         'workdir': '.',
         'port': 6379,
-        'maxmemory': '64mb',
+        'maxmemory': '128mb',
         'databases': 16,
         'root': 'app',
         'packages': {
-            'redis': 'http://download.redis.io/releases/redis-5.0.5.tar.gz'
+            'redis': 'http://download.redis.io/releases/redis-6.2.5.tar.gz'
         },
         'iptables': {
             'v4': 'ipv4.rules'
@@ -119,7 +119,7 @@ class RedisSettings(DeployComponentSettings):
 SETTINGS = RedisSettings()
 
 
-class RedisTasks(DeployComponentTasks, SystemdTasksMixin):
+class RedisTasks(DeployTasks, SystemdTasksMixin):
     SETTINGS = SETTINGS
 
     # TODO: add packages

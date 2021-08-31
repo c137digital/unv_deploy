@@ -1,25 +1,11 @@
 Vagrant.configure("2") do |config|
-    name = 'unvdeploytest'
+    # assign ip in private network
+    config.vm.network "private_network", type: "dhcp"
 
-    config.vm.box = "generic/debian10"
-    ip = "10.10.30.10"
-    memory = 512
-    cpus = 2
-    
-    config.vm.provider "virtualbox" do |v|
-        v.memory = memory
-        v.cpus = cpus
-        v.customize ["modifyvm", :id, "--uartmode1", "disconnected"]
-        v.customize ["modifyvm", :id, "--vram", "12"]
-    end
-
-    config.vm.provider "parallels" do |prl|
-        prl.memory = memory
-        prl.cpus = cpus
-      end
-
+    # disable default mount folder
     config.vm.synced_folder ".", "/vagrant", disabled: true
-    
+
+    # make ssh for root
     ssh_pub_key = File.readlines("#{Dir.home}/.ssh/id_rsa.pub").first.strip
     config.ssh.insert_key = false
     config.vm.provision 'shell', inline: 'rm -rf /root/.ssh'
@@ -30,17 +16,57 @@ Vagrant.configure("2") do |config|
         inline: "echo #{ssh_pub_key} >> /home/vagrant/.ssh/authorized_keys",
         privileged: false
 
-    config.vm.define "app" do |app|
-        app.vm.network "private_network", ip: ip
-        app.vm.hostname = name
+    
+    config.vm.define "dev-backend-django-1" do |app|
+        app.vm.box = "generic/debian11"
+        app.vm.hostname = "dev-backend-django-1"
 
-        app.vm.provider "virtualbox" do |v|
-            v.name = name
-        end
-
+        
         app.vm.provider "parallels" do |v|
-            v.name = name
+            v.name = "dev-backend-django-1"
+            v.cpus = "1"
+            v.memory = 512
         end
+        
     end
-end
+    
+    config.vm.define "dev-frontend-nginx-1" do |app|
+        app.vm.box = "generic/debian11"
+        app.vm.hostname = "dev-frontend-nginx-1"
 
+        
+        app.vm.provider "parallels" do |v|
+            v.name = "dev-frontend-nginx-1"
+            v.cpus = "1"
+            v.memory = 512
+        end
+        
+    end
+    
+    config.vm.define "dev-db-postgres-1" do |app|
+        app.vm.box = "generic/debian11"
+        app.vm.hostname = "dev-db-postgres-1"
+
+        
+        app.vm.provider "parallels" do |v|
+            v.name = "dev-db-postgres-1"
+            v.cpus = "1"
+            v.memory = 256
+        end
+        
+    end
+    
+    config.vm.define "dev-db-redis-1" do |app|
+        app.vm.box = "generic/debian11"
+        app.vm.hostname = "dev-db-redis-1"
+
+        
+        app.vm.provider "parallels" do |v|
+            v.name = "dev-db-redis-1"
+            v.cpus = "1"
+            v.memory = 256
+        end
+        
+    end
+    
+end

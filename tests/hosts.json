@@ -1,0 +1,202 @@
+{
+  "app": [
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 512,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "dev-backend-django-1",
+      "provider": "vagrant",
+      "components": {
+        "app": {
+          "systemd": {
+            "instances": {
+              "count": 2
+            }
+          }
+        },
+        "python": {},
+        "iptables": {
+          "allow": [
+            "nginx"
+          ]
+        }
+      },
+      "public_ip": "10.37.129.12",
+      "private_ip": "10.37.129.12"
+    }
+  ],
+  "python": [
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 512,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "dev-backend-django-1",
+      "provider": "vagrant",
+      "components": {
+        "app": {
+          "systemd": {
+            "instances": {
+              "count": 2
+            }
+          }
+        },
+        "python": {},
+        "iptables": {
+          "allow": [
+            "nginx"
+          ]
+        }
+      },
+      "public_ip": "10.37.129.12",
+      "private_ip": "10.37.129.12"
+    }
+  ],
+  "iptables": [
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 512,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "dev-backend-django-1",
+      "provider": "vagrant",
+      "components": {
+        "app": {
+          "systemd": {
+            "instances": {
+              "count": 2
+            }
+          }
+        },
+        "python": {},
+        "iptables": {
+          "allow": [
+            "nginx"
+          ]
+        }
+      },
+      "public_ip": "10.37.129.12",
+      "private_ip": "10.37.129.12"
+    },
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 512,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "dev-frontend-nginx-1",
+      "provider": "vagrant",
+      "components": {
+        "nginx": {},
+        "iptables": {}
+      },
+      "public_ip": "10.37.129.9",
+      "private_ip": "10.37.129.9"
+    },
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 256,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "dev-db-postgres-1",
+      "provider": "vagrant",
+      "components": {
+        "postgres": {},
+        "iptables": {
+          "allow": [
+            "app"
+          ]
+        }
+      },
+      "public_ip": "10.37.129.11",
+      "private_ip": "10.37.129.11"
+    },
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 256,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "dev-db-redis-1",
+      "provider": "vagrant",
+      "components": {
+        "redis": {
+          "listen_private_ip": true
+        },
+        "iptables": {
+          "allow": [
+            "app"
+          ]
+        }
+      },
+      "public_ip": "10.37.129.10",
+      "private_ip": "10.37.129.10"
+    }
+  ],
+  "nginx": [
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 512,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "dev-frontend-nginx-1",
+      "provider": "vagrant",
+      "components": {
+        "nginx": {},
+        "iptables": {}
+      },
+      "public_ip": "10.37.129.9",
+      "private_ip": "10.37.129.9"
+    }
+  ],
+  "postgres": [
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 256,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "dev-db-postgres-1",
+      "provider": "vagrant",
+      "components": {
+        "postgres": {},
+        "iptables": {
+          "allow": [
+            "app"
+          ]
+        }
+      },
+      "public_ip": "10.37.129.11",
+      "private_ip": "10.37.129.11"
+    }
+  ],
+  "redis": [
+    {
+      "count": 1,
+      "cpus": 1,
+      "ram": 256,
+      "image": "generic/debian11",
+      "vm": "parallels",
+      "name": "dev-db-redis-1",
+      "provider": "vagrant",
+      "components": {
+        "redis": {
+          "listen_private_ip": true
+        },
+        "iptables": {
+          "allow": [
+            "app"
+          ]
+        }
+      },
+      "public_ip": "10.37.129.10",
+      "private_ip": "10.37.129.10"
+    }
+  ]
+}

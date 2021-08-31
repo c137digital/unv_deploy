@@ -1,4 +1,5 @@
 import asyncio
+import importlib
 import logging
 import functools
 
@@ -34,17 +35,43 @@ def onehost(task):
 
 
 class DeployTasks(Tasks):
-    def __init__(self, manager, lock, user, host):
-        self.user = user
+    SETTINGS = None
+
+    def __init__(self, manager, lock, host):
+        self.settings = self.__class__.SETTINGS
+        if self.settings is None or \
+                not isinstance(self.settings, DeployComponentSettings):
+            raise ValueError(
+                "Provide correct 'SETTINGS' value "
+                "should be an instance of class 'DeployComponentSettings' not "
+                f"[{self.settings}]"
+            )
+
+        self.settings.update_from_host(host)
+        self.host = host
         self.public_ip = host['public_ip']
         self.private_ip = host['private_ip']
-        self.port = host['port']
+        self.port = host.get('port', 22)
+        self.user = getattr(self.settings, 'user', self.settings.NAME)
 
         self._current_prefix = ''
         self._logger = logging.getLogger(self.__class__.__name__)
         self._lock = lock
 
         super().__init__(manager)
+
+    @classmethod
+    def get_namespace(cls):
+        return cls.SETTINGS.NAME
+
+    def get_all_manager_tasks(self, name: str = ''):
+        for task_class in self._manager.tasks.values():
+            task_name = task_class.get_namespace()
+            if name and name != task_name:
+                continue
+            for host in self._manager.hosts[task_name]:
+                if issubclass(task_class, DeployTasks):
+                    yield task_class(self._manager, self._lock, host)
 
     async def _calc_instances_count(self, count: int = 0, percent: int = 0):
         if percent:
@@ -53,15 +80,6 @@ class DeployTasks(Tasks):
             cpu_cores += count
             count = cpu_cores
         return count or 1
-
-    def get_all_deploy_tasks(self):
-        for task_class in self._manager.tasks.values():
-            if issubclass(task_class, DeployTasks):
-                yield task_class(self._manager, self._lock, self.user, {
-                    'public_ip': self.public_ip,
-                    'private_ip': self.private_ip,
-                    'port': self.port
-                })
 
     @contextmanager
     def _set_user(self, user):
@@ -122,6 +140,10 @@ class DeployTasks(Tasks):
     async def _create_user(self):
         """Create user if not exist and sync ssh keys."""
         user = self.user
+        local_ssh_public_key = Path('~/.ssh/id_rsa.pub')
+        local_ssh_public_key = local_ssh_public_key.expanduser()
+        keys_path = Path(
+            '/', 'home' if user != 'root' else '', user, '.ssh')
 
         with self._set_user('root'):
             try:
@@ -131,14 +153,9 @@ class DeployTasks(Tasks):
                     "adduser --quiet --disabled-password"
                     " --gecos \"{0}\" {0}".format(user)
                 )
-
-                local_ssh_public_key = Path('~/.ssh/id_rsa.pub')
-                local_ssh_public_key = local_ssh_public_key.expanduser()
-                keys_path = Path(
-                    '/', 'home' if user != 'root' else '',
-                    user, '.ssh'
-                )
-
+            try:
+                await self._run(f"cat {keys_path / 'authorized_keys'}")
+            except TaskRunError:
                 await self._mkdir(keys_path)
                 await self._run(f'chown -hR {user} {keys_path}')
                 await self._run('echo "{}" >> {}'.format(
@@ -164,6 +181,10 @@ class DeployTasks(Tasks):
             f'"{self._current_prefix}{command}"',
             interactive=interactive
         ) or ''
+        if self._manager.debug:
+            print(
+                f"[{self.host['name']}:{self.user}@{self.public_ip}] {command}"
+            )
         if strip:
             response = response.strip()
         return response
@@ -176,19 +197,17 @@ class DeployTasks(Tasks):
             await self._rmrf(path)
         await self._run(f'mkdir -p {path}')
 
-    async def _upload(self, local_path: Path, path: Path = '~/'):
-        await self._local(
-            f'scp -r -P {self.port} {local_path} '
-            f'{self.user}@{self.public_ip}:{path}'
-        )
-
-    async def _rsync(self, local_dir, root_dir, exclude=None):
+    async def _upload(self, local_path: Path, path: Path = None, exclude=None):
         exclude = [f"--exclude '{path}'" for path in exclude or []]
         exclude = ' '.join(exclude)
-        await self._local(
-            f'rsync -rave "ssh -p {self.port}" --delete {exclude} '
-            f'{local_dir}/ {self.user}@{self.public_ip}:{root_dir}'
-        )
+        dir_slash = '/' if local_path.is_dir() else ''
+        if not path:
+            path = Path('~/', local_path.name)
+        if local_path.exists():
+            await self._local(
+                f'rsync -rave "ssh -p {self.port}" --delete {exclude} '
+                f'{local_path}{dir_slash} {self.user}@{self.public_ip}:{path}'
+            )
 
     async def _upload_template(
             self, local_path: Path, path: Path, context: dict = None):
@@ -236,71 +255,3 @@ class DeployTasks(Tasks):
     @as_root
     async def root(self):
         return await self._run('bash', interactive=True)
-
-
-class DeployComponentTasks(DeployTasks):
-    SETTINGS = None
-
-    def __init__(self, manager, lock, user, host, settings=None):
-        settings = settings or self.__class__.SETTINGS
-        if settings is None or \
-                not isinstance(settings, DeployComponentSettings):
-            raise ValueError(
-                "Provide correct 'SETTINGS' value "
-                "should be an instance of class 'DeployComponentSettings' not "
-                f"[{settings}] value and type {type(settings)}"
-            )
-        self.settings = settings.create_host_settings_copy(host)
-
-        super().__init__(manager, lock, self.settings.user, host)
-
-    @classmethod
-    def get_namespace(cls):
-        return cls.SETTINGS.NAME
-
-
-class DeployTasksManager(TasksManager):
-    def register_from_settings(self):
-        for class_ in SETTINGS.task_classes:
-            self.register(class_)
-
-    def run_task(self, task_class, name, args):
-        method = getattr(task_class, name)
-        is_nohost = getattr(method, '__nohost__', False)
-        is_onehost = getattr(method, '__onehost__', False)
-
-        if issubclass(task_class, DeployTasks):
-            if is_nohost:
-                user = '__nohost__'
-                hosts = [
-                    ('', {'public_ip': None, 'private_ip': None, 'port': 0})
-                ]
-            else:
-                user, hosts = self._get_user_with_hosts(task_class)
-
-            if is_onehost and len(hosts) > 1:
-                hosts_per_index = []
-                for index, (host_name, host) in enumerate(hosts, start=1):
-                    hosts_per_index.append([host_name, host])
-                    print(f" ({index}) - {host_name} [{host['public_ip']}]")
-                chosen_index = int(input('Please choose host to run task: '))
-                hosts = [hosts_per_index[chosen_index + 1]]
-
-            async def run():
-                lock = asyncio.Lock()
-                tasks = [
-                    getattr(task_class(self, lock, user, host), name)
-                    for _, host in hosts
-                ]
-                await asyncio.gather(*[task(*args) for task in tasks])
-
-            asyncio.run(run())
-        else:
-            return super().run_task(task_class, name, args)
-
-    def _get_user_with_hosts(self, task_class):
-        name = task_class.get_namespace()
-        return (
-            SETTINGS.get_component_user(name),
-            list(SETTINGS.get_hosts(name))
-        )

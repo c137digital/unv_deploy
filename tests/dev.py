@@ -1,45 +1,88 @@
-from unv.app.settings import ComponentSettings
+import json
+import pathlib
+# from unv.utils.collections import update_dict_recur
 
-SETTINGS = ComponentSettings.create({
-    'deploy': {
-        'tasks': [
-            'unv.deploy.components.nginx:NginxTasks',
-            'unv.deploy.components.app:AppTasks',
-            'unv.deploy.components.vagrant:VagrantTasks',
-            'unv.deploy.components.iptables:IPtablesTasks',
-            'unv.deploy.components.redis:RedisTasks',
-            'unv.deploy.components.postgres:PostgresTasks'
-        ],
-        'hosts': {
-            'test.1': {
-                'public_ip': '10.10.30.10',
-                'private_ip': '0.0.0.0',
-                'components': [
-                    'vagrant', 'nginx', 'iptables', 'redis', 'postgres'],
-                'settings': {
-                    'nginx': {'geoip2db': {'lang': 'en'}},
-                    'redis': {'listen_private_ip': True}
+# TODO: add support for auto task assign per namespace -> we can replace any
+# TODO: after postgres rebuild copy data folder (stop postgres -> copy folder) -> build new version
+# TODO: fix geoip build for nginx (?) do we need this (?) -> probably no
+# TODO: we need to mount media folder of all (backend - nginx - nfs (?))
+# TODO: migrate data from one server to other
+
+VAGRANT_VM = 'parallels'
+SETTINGS = {'deploy': {
+    'env': 'dev',
+    'services': {
+        'backend': [{
+            'hosts': [
+                {
+                    'name': 'django',
+                    'count': 1,
+                    'provider': 'vagrant',
+                    'cpus': 1,
+                    'ram': 512,
+                    'vm': VAGRANT_VM
+                }
+            ],
+            'components': {
+                'app': {
+                    'systemd': {
+                        'instances': {'count': 2}
+                    }
                 },
-                'provider': 'vagrant'
-            },
-            # 'test.2': {
-            #     'public_ip': '10.10.30.11',
-            #     'components': ['vagrant', 'web', 'iptables', 'redis'],
-            #     'provider': 'vagrant'
-            # }
-        },
-        'components': {
-            'app': {
-                'systemd': {
-                    'instances': {'count': 0, 'percent': 50}
+                'python': {},
+                'iptables': {
+                    'allow': ['nginx'],
                 }
             },
-            'nginx': {
-                'geoip2': False,
-                'geoip2db': {
-                    'lang': 'ru'
+        }],
+        'frontend': [{
+            'hosts': [
+                {
+                    'name': 'nginx',
+                    'provider': 'vagrant',
+                    'cpus': 1,
+                    'ram': 512,
+                    'vm': VAGRANT_VM
+                }
+            ],
+            'components': {
+                'nginx': {},
+                'iptables': {}
+            },
+        }],
+        'db': [
+            {
+                'hosts': [
+                    {
+                        'name': 'postgres',
+                        'count': 1,
+                        'provider': 'vagrant',
+                        'vm': VAGRANT_VM
+                    }
+                ],
+                'components': {
+                    'postgres': {},
+                    'iptables': {
+                        'allow': ['app']
+                    }
+                }
+            },
+            {
+                'hosts': [
+                    {
+                        'name': 'redis',
+                        'count': 1,
+                        'provider': 'vagrant',
+                        'vm': VAGRANT_VM
+                    }
+                ],
+                'components': {
+                    'redis': {'listen_private_ip': True},
+                    'iptables': {
+                        'allow': ['app']
+                    }
                 }
             }
-        }
+        ]
     }
-})
+}}

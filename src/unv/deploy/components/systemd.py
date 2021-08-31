@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from unv.utils.tasks import register
+from unv.utils.tasks import register, TaskRunError
 
 
 class SystemdTasksMixin:
@@ -45,11 +45,29 @@ class SystemdTasksMixin:
             yield service
 
     async def _sync_systemd_units(self):
+        """Sync systemd units, delete old once if we changed
+        template or count."""
+        systemd_cached_file = Path(f"~/.{self.settings.NAME}_systemd_services")
+        try:
+            old_units = await self._run(f"cat {systemd_cached_file}")
+            old_units = set(Path(s) for s in old_units.split('\n'))
+        except TaskRunError:
+            old_units = set()
+
         services = [service async for service in self._get_systemd_services()]
+        new_units = set(
+            self.settings.systemd_dir / s['name'] for s in services)
+
+        delete_units = old_units - new_units
+        if delete_units:
+            with self._set_user('root'):
+                names = ' '.join(u.name for u in delete_units)
+                await self._run(f'systemctl disable {names}')
+                await self._rmrf(' '.join(str(u) for u in delete_units))
+            await self._rmrf(systemd_cached_file)
 
         for service in services:
             service_path = self.settings.systemd_dir / service['name']
-
             context = {'instance': service['instance']}.copy()
             context.update(service.get('context', {}))
             path = Path(service['template'])
@@ -59,6 +77,8 @@ class SystemdTasksMixin:
 
             with self._set_user('root'):
                 await self._upload_template(path, service_path, context)
+
+            await self._run(f'echo "{service_path}" >> {systemd_cached_file}')
 
         with self._set_user('root'):
             await self._run('systemctl daemon-reload')

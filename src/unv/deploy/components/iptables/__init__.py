@@ -1,8 +1,9 @@
 import jinja2
 
 from pathlib import Path
+from itertools import chain
 
-from ...tasks import DeployComponentTasks, register
+from ...tasks import DeployTasks, register
 from ...settings import SETTINGS, DeployComponentSettings
 
 from ..systemd import SystemdTasksMixin
@@ -13,11 +14,13 @@ class IPtablesSettings(DeployComponentSettings):
     SCHEMA = {
         'bin': {'type': 'string', 'required': True},
         'user': {'type': 'string', 'required': True},
+        'allow': {'type': 'list', 'schema': {'type': 'string'}},
         'rules': {
             'type': 'dict',
             'schema': {
                 'template': {'type': 'string', 'required': True},
-                'name': {'type': 'string', 'required': True}
+                'name': {'type': 'string', 'required': True},
+                'custom': {'type': 'string', 'required': True}
             }
         },
         'systemd': SystemdTasksMixin.SCHEMA
@@ -25,9 +28,11 @@ class IPtablesSettings(DeployComponentSettings):
     DEFAULT = {
         'bin': '/sbin/iptables-restore',
         'user': 'root',
+        'allow': [],
         'rules': {
             'template': 'ipv4.rules',
-            'name': 'ipv4.rules'
+            'name': 'ipv4.rules',
+            'custom': 'custom.rules'
         },
         'systemd': {
             'template': 'app.service',
@@ -42,42 +47,67 @@ class IPtablesSettings(DeployComponentSettings):
         return self.local_root / self._data['rules']['template']
 
     @property
-    def rules(self):
-        return Path('/etc') / self._data['rules']['name']
+    def custom_rules_template(self):
+        return self.local_root / self._data['rules']['custom']
+
+    @property
+    def rules_path(self):
+        return Path('/', 'etc', self._data['rules']['name'])
 
     @property
     def bin(self):
-        return f"{self._data['bin']} {self.rules}"
+        return f"{self._data['bin']} {self.rules_path}"
+
+    @property
+    def allow(self):
+        return self._data['allow']
 
 
-class IPtablesTasks(DeployComponentTasks, SystemdTasksMixin):
+class IPtablesTasks(DeployTasks, SystemdTasksMixin):
     SETTINGS = IPtablesSettings()
 
     @register
+    async def list(self):
+        print(await self._run(f'cat {self.settings.rules_path}'))
+
+    async def get_iptables_template(self):
+        return self.settings.custom_rules_template.read_text()
+
+    @register
     async def sync(self):
-        context = {
-            'get_hosts': SETTINGS.get_hosts,
-            'components': SETTINGS.get_components(self.public_ip)
-        }
         rendered = []
-        for task in self.get_all_deploy_tasks():
+        access_hosts = []
+        all_components = {}
+
+        for task in self.get_all_manager_tasks():
+            all_components.setdefault(task.settings.NAME, []).append(task)
+
+        for task in chain(*all_components.values()):
+            if self.host['name'] != task.host['name']:
+                continue
             get_template = getattr(task, 'get_iptables_template', None)
-            if get_template is not None:
+            if get_template:
                 template = jinja2.Template(
                     await get_template(), enable_async=True)
-                context['deploy'] = task
-                context['iptables_deploy'] = self
+                context = {'deploy': task, 'components': all_components}
                 rendered.append(await template.render_async(context))
-                context.pop('deploy')
-        context['components_templates'] = "\n".join([
-            line.strip() for line in rendered
-        ])
+
+        current_host = "\n".join([line.strip() for line in rendered if line])
+
+        for component_name in self.settings.allow:
+            for task in all_components[component_name]:
+                access_hosts.append(task.host)
 
         await self._upload_template(
-            self.settings.rules_template, self.settings.rules, context)
+            self.settings.rules_template, self.settings.rules_path,
+            {'current_host': current_host, 'access_hosts': access_hosts}
+        )
+
         await self._sync_systemd_units()
 
     @register
     async def setup(self):
+        await self._apt_install('rsync', 'iptables')
+
         await self.sync()
         await self.start()
