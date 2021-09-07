@@ -1,32 +1,4 @@
 {
-  "app": [
-    {
-      "count": 1,
-      "cpus": 1,
-      "ram": 512,
-      "image": "generic/debian11",
-      "vm": "parallels",
-      "name": "dev-backend-django-1",
-      "provider": "vagrant",
-      "components": {
-        "app": {
-          "systemd": {
-            "instances": {
-              "count": 2
-            }
-          }
-        },
-        "python": {},
-        "iptables": {
-          "allow": [
-            "nginx"
-          ]
-        }
-      },
-      "public_ip": "10.37.129.12",
-      "private_ip": "10.37.129.12"
-    }
-  ],
   "python": [
     {
       "count": 1,
@@ -37,13 +9,6 @@
       "name": "dev-backend-django-1",
       "provider": "vagrant",
       "components": {
-        "app": {
-          "systemd": {
-            "instances": {
-              "count": 2
-            }
-          }
-        },
         "python": {},
         "iptables": {
           "allow": [
@@ -51,8 +16,8 @@
           ]
         }
       },
-      "public_ip": "10.37.129.12",
-      "private_ip": "10.37.129.12"
+      "public_ip": "10.37.129.35",
+      "private_ip": "10.37.129.35"
     }
   ],
   "iptables": [
@@ -65,13 +30,6 @@
       "name": "dev-backend-django-1",
       "provider": "vagrant",
       "components": {
-        "app": {
-          "systemd": {
-            "instances": {
-              "count": 2
-            }
-          }
-        },
         "python": {},
         "iptables": {
           "allow": [
@@ -79,8 +37,8 @@
           ]
         }
       },
-      "public_ip": "10.37.129.12",
-      "private_ip": "10.37.129.12"
+      "public_ip": "10.37.129.35",
+      "private_ip": "10.37.129.35"
     },
     {
       "count": 1,
@@ -94,8 +52,8 @@
         "nginx": {},
         "iptables": {}
       },
-      "public_ip": "10.37.129.9",
-      "private_ip": "10.37.129.9"
+      "public_ip": "10.37.129.33",
+      "private_ip": "10.37.129.33"
     },
     {
       "count": 1,
@@ -109,12 +67,12 @@
         "postgres": {},
         "iptables": {
           "allow": [
-            "app"
+            "python"
           ]
         }
       },
-      "public_ip": "10.37.129.11",
-      "private_ip": "10.37.129.11"
+      "public_ip": "10.37.129.34",
+      "private_ip": "10.37.129.34"
     },
     {
       "count": 1,
@@ -126,16 +84,16 @@
       "provider": "vagrant",
       "components": {
         "redis": {
-          "listen_private_ip": true
+          "listen_private_ip": false
         },
         "iptables": {
           "allow": [
-            "app"
+            "python"
           ]
         }
       },
-      "public_ip": "10.37.129.10",
-      "private_ip": "10.37.129.10"
+      "public_ip": "10.37.129.32",
+      "private_ip": "10.37.129.32"
     }
   ],
   "nginx": [
@@ -151,8 +109,8 @@
         "nginx": {},
         "iptables": {}
       },
-      "public_ip": "10.37.129.9",
-      "private_ip": "10.37.129.9"
+      "public_ip": "10.37.129.33",
+      "private_ip": "10.37.129.33"
     }
   ],
   "postgres": [
@@ -168,12 +126,12 @@
         "postgres": {},
         "iptables": {
           "allow": [
-            "app"
+            "python"
           ]
         }
       },
-      "public_ip": "10.37.129.11",
-      "private_ip": "10.37.129.11"
+      "public_ip": "10.37.129.34",
+      "private_ip": "10.37.129.34"
     }
   ],
   "redis": [
@@ -187,16 +145,16 @@
       "provider": "vagrant",
       "components": {
         "redis": {
-          "listen_private_ip": true
+          "listen_private_ip": false
         },
         "iptables": {
           "allow": [
-            "app"
+            "python"
           ]
         }
       },
-      "public_ip": "10.37.129.10",
-      "private_ip": "10.37.129.10"
+      "public_ip": "10.37.129.32",
+      "private_ip": "10.37.129.32"
     }
   ]
 }

@@ -22,27 +22,12 @@ class NginxSettings(DeployComponentSettings):
                 'pcre': {'type': 'string', 'required': True},
                 'zlib': {'type': 'string', 'required': True},
                 'openssl': {'type': 'string', 'required': True},
-                'geoip2': {'type': 'string', 'required': True},
-                'libmaxminddb': {'type': 'string', 'required': True}
             },
             'required': True
         },
         'packages_dir': {
             'type': 'dict',
             'required': False
-        },
-        'geoip2db': {
-            'type': 'dict',
-            'schema': {
-                'city': {'type': 'string', 'required': True},
-                'country': {'type': 'string', 'required': True},
-                'lang': {
-                    'type': 'string',
-                    'required': True,
-                    'allowed': ['en', 'ru']
-                }
-            },
-            'required': True
         },
         'configs': {'type': 'dict'},
         'connections': {'type': 'integer', 'required': True},
@@ -56,7 +41,6 @@ class NginxSettings(DeployComponentSettings):
         'access_log': {'type': 'string', 'required': True},
         'error_log': {'type': 'string', 'required': True},
         'default_type': {'type': 'string', 'required': True},
-        'geoip2': {'type': 'boolean', 'required': True},
         'iptables': {
             'type': 'dict',
             'schema': {
@@ -75,24 +59,13 @@ class NginxSettings(DeployComponentSettings):
         'master': True,
         'root': 'app',
         'packages': {
-            'nginx': 'http://nginx.org/download/nginx-1.21.1.tar.gz',
+            'nginx': 'http://nginx.org/download/nginx-1.21.2.tar.gz',
             'pcre': 'https://ftp.pcre.org/pub/pcre/pcre-8.45.tar.gz',
             'zlib': 'http://www.zlib.net/zlib-1.2.11.tar.gz',
             'openssl': 'https://www.openssl.org/source/openssl-1.1.1l.tar.gz',
-            'geoip2': 'https://github.com/leev/ngx_http_geoip2_'
-                'module/archive/master.tar.gz',
-            'libmaxminddb': 'https://github.com/maxmind/libmaxminddb/releases'
-                '/download/1.3.2/libmaxminddb-1.3.2.tar.gz',
         },
         'packages_dir': {
             'geoip2': 'ngx_http_geoip2_module-master',
-        },
-        'geoip2db': {
-            'city': 'https://geolite.maxmind.com/download/geoip/database/'
-                'GeoLite2-City.tar.gz',
-            'country': 'https://geolite.maxmind.com/download/geoip/database/'
-                'GeoLite2-Country.tar.gz',
-            'lang': 'en'
         },
         'configs': {'server.conf': 'nginx.conf'},
         'connections': 1000,
@@ -106,7 +79,6 @@ class NginxSettings(DeployComponentSettings):
         'access_log': 'logs/access.log',
         'error_log': 'logs/error.log',
         'default_type': 'application/octet-stream',
-        'geoip2': False,
         'iptables': {'v4': 'ipv4.rules'}
     }
 
@@ -178,55 +150,18 @@ class NginxSettings(DeployComponentSettings):
         return self._data['master']
 
     @property
-    def geoip2(self):
-        return self._data['geoip2']
-
-    @property
-    def geoip2_city_path(self):
-        return self.root_abs / 'geoip2' / 'GeoLite2-City.mmdb'
-
-    @property
-    def geoip2_country_path(self):
-        return self.root_abs / 'geoip2' / 'GeoLite2-Country.mmdb'
-
-    @property
-    def geoip2_lang(self):
-        return self._data['geoip2db']['lang']
-
-    @property
-    def geoip2db_city_url(self):
-        return self._data['geoip2db']['city']
-
-    @property
-    def geoip2db_country_url(self):
-        return self._data['geoip2db']['country']
-
-    @property
     def iptables_v4_rules(self):
         return (self.local_root / self._data['iptables']['v4']).read_text()
 
 
+SETTINGS = NginxSettings()
+
+
 class NginxTasks(DeployTasks, SystemdTasksMixin):
-    SETTINGS = NginxSettings()
+    SETTINGS = NginxSettings
 
     async def get_iptables_template(self):
         return self.settings.iptables_v4_rules
-
-    @as_root
-    async def _install_libmaxminddb(self):
-        # TODO: move to other package?
-        package = 'libmaxminddb'
-        url = self.settings.packages[package]
-
-        async with self._cd('build', temporary=True):
-            await self._download_and_unpack(url, Path('.', package))
-
-            async with self._cd('libmaxminddb'):
-                await self._run('./configure')
-                await self._run('make')
-                await self._run('make check')
-                await self._run('make install')
-                await self._run('ldconfig')
 
     @register
     async def build(self):
@@ -240,32 +175,11 @@ class NginxTasks(DeployTasks, SystemdTasksMixin):
             'build-essential', 'autotools-dev', 'libexpat-dev',
             'libgd-dev', 'libgeoip-dev', 'liblua5.1-0-dev',
             'libmhash-dev', 'libpam0g-dev', 'libperl-dev',
-            'libxslt1-dev'
+            'libxslt1-dev', 'rsync'
         )
-
-        if self.settings.geoip2:
-            await self._install_libmaxminddb()
-
-            async with self._cd(self.settings.root):
-                await self._mkdir('geoip2')
-                async with self._cd('geoip2'):
-                    await self._download_and_unpack(
-                        self.settings.geoip2db_city_url,
-                        archive_dir_name='GeoLite2-City_*'
-                    )
-                    await self._download_and_unpack(
-                        self.settings.geoip2db_country_url,
-                        archive_dir_name='GeoLite2-Country_*'
-                    )
-                    await self._run('rm *.txt')
 
         async with self._cd(self.settings.build, temporary=True):
             for package, url in self.settings.packages.items():
-                if package == 'libmaxminddb':
-                    continue
-                if package == 'geoip2' and not self.settings.geoip2:
-                    continue
-
                 await self._download_and_unpack(
                     url, Path('.', package),
                     archive_dir_name=self.settings.packages_dir.get(package)
@@ -281,8 +195,6 @@ class NginxTasks(DeployTasks, SystemdTasksMixin):
                     "--with-http_v2_module --with-threads "
                     "--with-file-aio --with-http_realip_module "
                 )
-                if self.settings.geoip2:
-                    build_command += '--add-module=../geoip2 '
                 await self._run(build_command)
                 await self._run('make')
                 await self._run('make install')
@@ -292,16 +204,17 @@ class NginxTasks(DeployTasks, SystemdTasksMixin):
         for template, path in self.settings.configs:
             await self._upload_template(template, path)
 
-        for task in self.get_all_deploy_tasks():
-            get_configs = getattr(task, 'get_nginx_include_configs', None)
-            if get_configs is not None:
-                configs = await get_configs()
-                for template, path in configs:
-                    await self._upload_template(
-                        template,
-                        self.settings.root / self.settings.include.parent
-                        / path, {'deploy': task, 'nginx_deploy': self}
-                    )
+        # nginx configs from other projects
+        # for task in self.get_all_deploy_tasks():
+        #     get_configs = getattr(task, 'get_nginx_include_configs', None)
+        #     if get_configs is not None:
+        #         configs = await get_configs()
+        #         for template, path in configs:
+        #             await self._upload_template(
+        #                 template,
+        #                 self.settings.root / self.settings.include.parent
+        #                 / path, {'deploy': task, 'nginx_deploy': self}
+        #             )
 
         await self._sync_systemd_units()
 

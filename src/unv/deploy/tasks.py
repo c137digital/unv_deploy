@@ -1,5 +1,4 @@
 import asyncio
-import importlib
 import logging
 import functools
 
@@ -8,9 +7,9 @@ from pathlib import Path
 
 import jinja2
 
-from unv.utils.tasks import Tasks, TasksManager, TaskRunError, register
+from unv.utils.tasks import Tasks, TaskRunError, register
 
-from .settings import SETTINGS, DeployComponentSettings
+from .settings import DeployComponentSettings
 
 
 def as_root(func):
@@ -38,21 +37,20 @@ class DeployTasks(Tasks):
     SETTINGS = None
 
     def __init__(self, manager, lock, host):
-        self.settings = self.__class__.SETTINGS
-        if self.settings is None or \
-                not isinstance(self.settings, DeployComponentSettings):
+        if self.SETTINGS is None or \
+                not issubclass(self.SETTINGS, DeployComponentSettings):
             raise ValueError(
                 "Provide correct 'SETTINGS' value "
-                "should be an instance of class 'DeployComponentSettings' not "
-                f"[{self.settings}]"
+                "should be an subclass of 'DeployComponentSettings' not "
+                f"[{self.SETTINGS}]"
             )
 
-        self.settings.update_from_host(host)
+        self.settings = self.SETTINGS.create_from_host(host)
         self.host = host
         self.public_ip = host['public_ip']
         self.private_ip = host['private_ip']
         self.port = host.get('port', 22)
-        self.user = getattr(self.settings, 'user', self.settings.NAME)
+        self.user = self.settings.user
 
         self._current_prefix = ''
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -69,7 +67,7 @@ class DeployTasks(Tasks):
             task_name = task_class.get_namespace()
             if name and name != task_name:
                 continue
-            for host in self._manager.hosts[task_name]:
+            for host in self._manager.hosts.get(task_name, []):
                 if issubclass(task_class, DeployTasks):
                     yield task_class(self._manager, self._lock, host)
 
@@ -95,7 +93,7 @@ class DeployTasks(Tasks):
         old_public_ip, old_private_ip, old_port =\
             self.public_ip, self.private_ip, self.port
         self.public_ip, self.private_ip, self.port =\
-            host['public_ip'], host['private_ip'], host['port']
+            host['public_ip'], host['private_ip'], host.get('port', 22)
         try:
             yield self
         finally:
@@ -175,16 +173,17 @@ class DeployTasks(Tasks):
     async def _run(self, command, strip=True, interactive=False) -> str:
         command = str(command).replace('"', r'\"').replace('$(', r'\$(')
         interactive_flag = '-t' if interactive else ''
+        if self._manager.debug:
+            print(
+                f"[{self.host.get('name', '-')}:"
+                f"{self.user}@{self.public_ip}] {command}"
+            )
         response = await self._local(
             f"ssh {interactive_flag} -p {self.port} "
             f"{self.user}@{self.public_ip} "
             f'"{self._current_prefix}{command}"',
             interactive=interactive
         ) or ''
-        if self._manager.debug:
-            print(
-                f"[{self.host['name']}:{self.user}@{self.public_ip}] {command}"
-            )
         if strip:
             response = response.strip()
         return response

@@ -1,40 +1,40 @@
 import asyncio
 
 from pathlib import Path
+from typing import Generator
 
 from watchgod import awatch
 
-from ...tasks import DeployTasks, nohost, register, onehost
-from ...settings import SETTINGS, DeployComponentSettings
+from ...tasks import DeployTasks, nohost, register
+from ...settings import DeployComponentSettings
 
-from ..python import PythonTasks, PythonSettings
 from ..systemd import SystemdTasksMixin
 
 
 class AppSettings(DeployComponentSettings):
     NAME = 'app'
     SCHEMA = {
-        'user': {'type': 'string', 'required': False},
-        'bin': {'type': 'string'},
         'instance': {'type': 'integer'},
+        'bin': {'type': 'string', 'required': True},
+        'user': {'type': 'string', 'required': False},
         'settings': {'type': 'string'},
         'systemd': SystemdTasksMixin.SCHEMA,
         'watch': {
-            'type': 'dict',
-            'schema': {
-                'dirs': {'type': 'list', 'schema': {'type': 'string'}},
+            'type': 'list',
+            'schema': {'type': 'dict', 'schema': {
+                'local': {'type': 'string'},
+                'remote': {'type': 'string'},
                 'exclude': {'type': 'list', 'schema': {'type': 'string'}}
-            }
+            }}
         },
-        'python': {'type': 'dict', 'schema': PythonSettings.SCHEMA}
     }
     DEFAULT = {
-        'bin': 'app',
+        'bin': 'app.sh',
         'instance': 1,
-        'settings': 'secure.prod',
+        'settings': '',
         'systemd': {
             'template': 'app.service',
-            'name': 'app_{instance}.service',
+            'name': '{settings.NAME}_{instance}.service',
             'boot': True,
             'type': 'simple',
             'instances': {'count': 0, 'percent': 0},
@@ -43,22 +43,17 @@ class AppSettings(DeployComponentSettings):
                 'description': "Application description",
             }
         },
-        'watch': {
-            'dirs': ['./src', './secure'],
-            'exclude': ['__pycache__', '*.egg-info']
-        },
-        'python': PythonSettings.DEFAULT
+        'watch': [
+            {'local': './somedir', 'remote': './some'}
+        ]
     }
 
     @property
-    def python(self):
-        settings = self._data.get('python', {})
-        settings['user'] = self.user
-        return PythonSettings(settings)
-
-    @property
     def bin(self):
-        return str(self.python.root_abs / 'bin' / self._data['bin'])
+        bin_path = self._data['bin'].format(settings=self)
+        if not bin_path.startswith('/'):
+            return self.home_abs / bin_path
+        return Path(bin_path)
 
     @property
     def module(self):
@@ -70,79 +65,51 @@ class AppSettings(DeployComponentSettings):
 
     @property
     def watch_dirs(self):
-        return (Path(directory) for directory in self._data['watch']['dirs'])
+        for info in self._data['watch']:
+            yield {
+                'local': Path(info['local']),
+                'remote': info['remote'],
+                'exclude': info.get('exclude', [])
+            }
 
-    @property
-    def watch_exclude(self):
-        return self._data['watch']['exclude']
+
+SETTINGS = AppSettings()
 
 
 class AppTasks(DeployTasks, SystemdTasksMixin):
-    SETTINGS = AppSettings()
-
-    def __init__(self, manager, lock, host):
-        super().__init__(manager, lock, host)
-
-        # self._python = PythonTasks(
-        #     manager, lock, self.settings.python)
+    SETTINGS = AppSettings
 
     @register
     @nohost
     async def watch(self):
         await asyncio.gather(*[
-            self._watch_and_sync_dir(directory)
-            for directory in self.settings.watch_dirs
+            self._watch_and_sync_dir(dir_info, task)
+            for dir_info in self.settings.watch_dirs
+            for task in self.get_all_manager_tasks(self.get_namespace())
         ])
 
-    async def _watch_and_sync_dir(self, directory):
-        site_packages_abs = self.settings.python.site_packages_abs
-        async for _ in awatch(directory):
-            for _, host in SETTINGS.get_hosts(self.NAMESPACE):
-                with self._set_user(self.settings.user), \
-                        self._set_host(host):
-                    for sub_dir in directory.iterdir():
-                        if not sub_dir.is_dir():
-                            continue
-                        await self._upload(
-                            sub_dir, site_packages_abs / sub_dir.name,
-                            self.settings.watch_exclude
-                        )
-                    await self.restart()
+    async def _watch_and_sync_dir(self, dir_info, task):
+        async for _ in awatch(dir_info['local']):
+            with self._set_host(task.host), self._set_user(task.user):
+                await self._upload(
+                    dir_info['local'], dir_info['remote'],
+                    exclude=dir_info['exclude']
+                )
+                await self.restart()
 
-    @register
     async def build(self):
+        """Define build instructions for your app"""
+        await self._apt_install('rsync')
         await self._create_user()
-        await self._python.build()
-
-    @register
-    @onehost
-    async def shell(self):
-        return await self._python.shell(
-            prefix=f'SETTINGS={self.settings.module}')
 
     @register
     async def sync(self, type_=''):
-        flag = '-I' if type_ == 'force' else '-U'
-        name = (await self._local('python setup.py --name')).strip()
-        version = (await self._local('python setup.py --version')).strip()
-        package = f'{name}-{version}.tar.gz'
-
-        await self._upload(Path('dist', package))
-        await self._python.pip(f'install {flag} {package}')
-        await self._rmrf(Path(package))
-        await self._upload(Path('secure'), Path('secure'))
-
+        await self._upload(
+            self.settings.local_root / self.settings.bin.name,
+            self.settings.home_abs
+        )
+        await self._run(f'chmod +x {self.settings.bin}')
         await self._sync_systemd_units()
-
-    @sync.before
-    async def sync(self):
-        await self._local('rm -rf ./build ./dist')
-        await self._local('pip install -e .')
-        await self._local('python setup.py sdist bdist_wheel')
-
-    @sync.after
-    async def sync(self):
-        await self._local('rm -rf ./build ./dist')
 
     @register
     async def setup(self):

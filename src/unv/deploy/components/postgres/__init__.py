@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from unv.utils.tasks import TaskRunError
+
 from unv.deploy.tasks import (
     DeployComponentSettings, DeployTasks, register
 )
@@ -96,15 +98,18 @@ class PostgresSettings(DeployComponentSettings):
     @property
     def locale(self):
         return self._data['locale']
-    
+
     @property
     def iptables_v4_rules(self):
         return (self.local_root / self._data['iptables']['v4']).read_text()
 
 
+SETTINGS = PostgresSettings()
+
+
 class PostgresTasks(DeployTasks, SystemdTasksMixin):
-    SETTINGS = PostgresSettings()
-    
+    SETTINGS = PostgresSettings
+
     async def get_iptables_template(self):
         return self.settings.iptables_v4_rules
 
@@ -113,8 +118,9 @@ class PostgresTasks(DeployTasks, SystemdTasksMixin):
         await self._create_user()
 
         await self._apt_install(
-            'build-essential flex bison libreadline6-dev '
-            'zlib1g-dev libossp-uuid-dev libsystemd-dev'
+            'build-essential', 'flex', 'bison', 'libreadline6-dev '
+            'zlib1g-dev', 'libossp-uuid-dev', 'libsystemd-dev',
+            'rsync'
         )
         async with self._cd(self.settings.build_dir, temporary=True):
             for package, url in self.settings.sources.items():
@@ -130,7 +136,7 @@ class PostgresTasks(DeployTasks, SystemdTasksMixin):
 
                 # TODO: add custom contrib packages configuration
                 # for contrib in str(await self._run('ls contrib')).split():
-                #     if contrib 
+                #     if contrib
                 #     async with self._cd(f'contrib/{contrib}'):
                 #         await self._run('ls')
 
@@ -147,10 +153,17 @@ class PostgresTasks(DeployTasks, SystemdTasksMixin):
     @register
     async def make_data_dir(self):
         init_db_bin = self.settings.root_abs / 'bin' / 'initdb'
-        await self._run(
-            f'{init_db_bin} -D {self.settings.data_dir} '
-            f'--locale {self.settings.locale}'
-        )
+        try:
+            await self._run(f'ls {self.settings.data_dir}')
+            init_db = False
+        except TaskRunError:
+            init_db = True
+
+        if init_db:
+            await self._run(
+                f'{init_db_bin} -D {self.settings.data_dir} '
+                f'--locale {self.settings.locale}'
+            )
 
     @register
     async def psql(self, command: str = ''):
@@ -174,12 +187,12 @@ class PostgresTasks(DeployTasks, SystemdTasksMixin):
         await self.psql(f'GRANT ALL PRIVILEGES ON DATABASE {name} TO {user};')
 
     @register
+    async def drop_database(self, name):
+        await self.psql(f'DROP DATABASE IF EXISTS {name};')
+
+    @register
     async def setup(self):
         await self.build()
         await self.make_data_dir()
         await self.sync()
         await self.start()
-
-        # TODO: create user from settings
-        # await self.create_user('project_user')
-        # await self.create_database('project_db', 'project_user')

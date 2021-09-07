@@ -1,14 +1,16 @@
-from ..tasks import DeployTasks
-from ..settings import DeployComponentSettings
+from pathlib import Path
+
+from unv.utils.collections import update_dict_recur
+from unv.deploy.tasks import onehost, register
+
+from .app import AppTasks, AppSettings
 
 
-class PythonSettings(DeployComponentSettings):
-    # TODO: move to own package
+class PythonSettings(AppSettings):
     NAME = 'python'
-    SCHEMA = {
+    SCHEMA = update_dict_recur(AppSettings.SCHEMA, {
         'root': {'type': 'string', 'required': True},
         'version': {'type': 'string', 'required': True},
-        'user': {'type': 'string', 'required': True},
         'build': {
             'type': 'dict',
             'schema': {
@@ -17,16 +19,30 @@ class PythonSettings(DeployComponentSettings):
             },
             'required': True
         }
-    }
-    DEFAULT = {
+    })
+    DEFAULT = update_dict_recur(AppSettings.DEFAULT, {
+        'bin': "python3 --version",
         'user': 'python',
         'root': 'python',
         'version': '3.9.6',
         'build': {
             'fast': True,
             'path': 'build'
+        },
+        'systemd': {
+            'config': [
+                'Environment=PYTHONPATH={settings.home_abs}'
+            ]
         }
-    }
+    })
+
+    @property
+    def bin(self):
+        return self.root_path / self._data['bin']
+
+    @property
+    def _local_root_class(self):
+        return AppSettings
 
     @property
     def version(self):
@@ -47,26 +63,78 @@ class PythonSettings(DeployComponentSettings):
             f'python{self.version[:3]}' / 'site-packages'
         )
 
+    @property
+    def root_path(self):
+        return self.root_abs / 'bin'
 
-class PythonTasks(DeployTasks):
-    SETTINGS = PythonSettings()
 
+SETTINGS = PythonSettings()
+
+
+class PythonTasks(AppTasks):
+    SETTINGS = PythonSettings
+
+    @register
     async def pip(self, command: str):
         return await self.run(f'pip3 {command}')
 
+    @register
     async def run(
             self, command: str, interactive: int = False, prefix: str = ''):
         if prefix:
             prefix = f'{prefix} '
         return await self._run(
-            f"{prefix}{self.settings.root_abs / 'bin' / command}",
+            f"{prefix}{self.settings.root_path / command}",
             interactive=interactive
         )
 
+    @onehost
+    @register
     async def shell(self, prefix: str = ''):
         return await self.run('python3', interactive=True, prefix=prefix)
 
+    @register
+    async def sync(self, type_: str = ''):
+        current_dir = Path.cwd()
+        if not (current_dir / 'setup.py').exists():
+            return
+
+        flag = '-I' if type_ == 'force' else '-U'
+        name = (await self._local('python setup.py --name')).strip()
+        version = (await self._local('python setup.py --version')).strip()
+        package = f'{name}-{version}.tar.gz'
+
+        await self._upload(Path('dist', package))
+        await self.pip(f'install {flag} {package}')
+        await self._rmrf(Path(package))
+
+        await self._sync_systemd_units()
+
+    @register
+    async def setup(self):
+        await self.build()
+        await self.sync()
+        await self.start()
+
+    @sync.before
+    @setup.before
+    async def before_sync(self):
+        current_dir = Path.cwd()
+        if not (current_dir / 'setup.py').exists():
+            return
+        await self._local('rm -rf ./build ./dist')
+        await self._local('pip install -e .')
+        await self._local('python setup.py sdist bdist_wheel')
+
+    @sync.after
+    @setup.after
+    async def after_sync(self):
+        await self._local('rm -rf ./build ./dist')
+
+    @register
     async def build(self):
+        await super().build()
+
         version = self.settings.version
         fast_build = self.settings.fast_build
         build_path = self.settings.build_path

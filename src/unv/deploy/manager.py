@@ -84,7 +84,3 @@ class DeployTasksManager(TasksManager):
 
 
 DEPLOY_TASKS_MANAGER = DeployTasksManager()
-# local run
-# settings.dev only for deploy (!) not for commands
-# manage make migrations (?) -> create migrations here and connect
-# to vagrant db

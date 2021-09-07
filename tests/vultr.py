@@ -1,6 +1,4 @@
-import json
-import pathlib
-# from unv.utils.collections import update_dict_recur
+import os
 
 # TODO: add support for auto task assign per namespace -> we can replace any
 # TODO: after postgres rebuild copy data folder
@@ -17,14 +15,17 @@ SETTINGS = {'deploy': {
                 {
                     'name': 'django',
                     'count': 1,
-                    'provider': 'vagrant',
-                    'cpus': 1,
-                    'ram': 512,
-                    'vm': 'parallels'
+                    'provider': 'vultr',
+                    'ssh-key': '3e0b30d7-0a41-434b-affa-0e67f8af0eef',
+                    'key': os.environ['VULTR_API_KEY']
                 }
             ],
             'components': {
-                'python': {},
+                'python': {
+                    'systemd': {
+                        'instances': {'count': 1}
+                    }
+                },
                 'iptables': {
                     'allow': ['nginx'],
                 }
@@ -34,9 +35,8 @@ SETTINGS = {'deploy': {
             'hosts': [
                 {
                     'name': 'nginx',
-                    'provider': 'vagrant',
-                    'cpus': 1,
-                    'ram': 512,
+                    'count': 1,
+                    'provider': 'vultr',
                 }
             ],
             'components': {
@@ -50,7 +50,7 @@ SETTINGS = {'deploy': {
                     {
                         'name': 'postgres',
                         'count': 1,
-                        'provider': 'vagrant',
+                        'provider': 'vultr',
                     }
                 ],
                 'components': {
@@ -60,16 +60,18 @@ SETTINGS = {'deploy': {
                     }
                 }
             },
+        ],
+        'cache': [
             {
                 'hosts': [
                     {
                         'name': 'redis',
                         'count': 1,
-                        'provider': 'vagrant',
+                        'provider': 'vultr',
                     }
                 ],
                 'components': {
-                    'redis': {'listen_private_ip': False},
+                    'redis': {'listen_private_ip': True},
                     'iptables': {
                         'allow': ['python']
                     }

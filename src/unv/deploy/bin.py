@@ -15,7 +15,7 @@ def run():
             module_path = f'{module}{env}'
             importlib.import_module(module_path)
             break
-        except (ImportError, ModuleNotFoundError):
+        except ImportError:
             module_path = ''
             continue
 

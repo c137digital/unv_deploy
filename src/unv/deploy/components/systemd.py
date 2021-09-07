@@ -40,7 +40,8 @@ class SystemdTasksMixin:
         count = await self._calc_instances_count(**systemd['instances'])
         for instance in range(1, count + 1):
             service = systemd.copy()
-            service['name'] = name.format(instance=instance)
+            service['name'] = name.format(
+                settings=self.settings, deploy=self, instance=instance)
             service['instance'] = instance
             yield service
 
@@ -50,13 +51,12 @@ class SystemdTasksMixin:
         systemd_cached_file = Path(f"~/.{self.settings.NAME}_systemd_services")
         try:
             old_units = await self._run(f"cat {systemd_cached_file}")
-            old_units = set(Path(s) for s in old_units.split('\n'))
+            old_units = {Path(s) for s in old_units.split('\n')}
         except TaskRunError:
             old_units = set()
 
         services = [service async for service in self._get_systemd_services()]
-        new_units = set(
-            self.settings.systemd_dir / s['name'] for s in services)
+        new_units = {self.settings.systemd_dir / s['name'] for s in services}
 
         delete_units = old_units - new_units
         if delete_units:

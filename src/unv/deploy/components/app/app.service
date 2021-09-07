@@ -10,7 +10,6 @@ ExecStart={{ deploy.settings.bin }}
 WorkingDirectory={{ deploy.settings.home_abs }}
 LimitNOFILE={{ limit_nofile }}
 
-Environment=PYTHONPATH={{ deploy.settings.home_abs }}
 Environment=SETTINGS={{ deploy.settings.module }}
 Environment=SETTINGS_DEPLOY_COMPONENTS_APP_INSTANCE={{ instance }}
 

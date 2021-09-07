@@ -57,7 +57,7 @@ class RedisSettings(DeployComponentSettings):
         # TODO: move to base config (base package for this type of components)
         'workdir': '.',
         'port': 6379,
-        'maxmemory': '128mb',
+        'maxmemory': '64mb',
         'databases': 16,
         'root': 'app',
         'packages': {
@@ -120,17 +120,39 @@ SETTINGS = RedisSettings()
 
 
 class RedisTasks(DeployTasks, SystemdTasksMixin):
-    SETTINGS = SETTINGS
+    SETTINGS = RedisSettings
 
-    # TODO: add packages
-    # TODO: add kernel systemd tasks to run settings on boot
-    # # /proc/sys/net/core/somaxconn to 5000 (need command)
     async def get_iptables_template(self):
         return self.settings.iptables_v4_rules
 
     @register
+    async def benchmark(self, connections: int = 200):
+        print(await self._run(
+            f'{self.settings.bin.parent / "redis-benchmark"} -c {connections} '
+            f'-h {self.public_ip} -p {self.settings.port} '
+            '-t SET,GET,INCR -n 1000000 -P 100 --csv'
+        ))
+
+    @register
     async def build(self):
+        await self._apt_install(
+            'build-essential', 'sysfsutils', 'libsystemd-dev',
+            'libjemalloc-dev', 'rsync'
+        )
         await self._create_user()
+
+        with self._set_user('root'):
+            await self._run(
+                'echo "kernel/mm/transparent_hugepage/enabled = never" '
+                '>> /etc/sysfs.conf'
+            )
+            await self._run(
+                'echo "vm.overcommit_memory=1" >> /etc/sysctl.conf')
+            await self._run(
+                'echo "net.core.somaxconn=65535" >> /etc/sysctl.conf')
+            await self._run('echo "fs.file-max=100000" >> /etc/sysctl.conf')
+            await self._run('sysctl -p')
+            await self._run('systemctl force-reload sysfsutils')
 
         async with self._cd(self.settings.build_dir, temporary=True):
             for package, url in self.settings.packages.items():
@@ -138,7 +160,8 @@ class RedisTasks(DeployTasks, SystemdTasksMixin):
 
             async with self._cd('redis'):
                 await self._run('make distclean')
-                await self._run("make -j$(nproc) MALLOC=jemalloc")
+                await self._run(
+                    "make -j$(nproc) USE_SYSTEMD=yes MALLOC=jemalloc")
                 await self._run(
                     f"make PREFIX={self.settings.root_abs} install")
 

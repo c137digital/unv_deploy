@@ -1,10 +1,11 @@
-import jinja2
 
 from pathlib import Path
 from itertools import chain
 
+import jinja2
+
 from ...tasks import DeployTasks, register
-from ...settings import SETTINGS, DeployComponentSettings
+from ...settings import DeployComponentSettings
 
 from ..systemd import SystemdTasksMixin
 
@@ -63,8 +64,11 @@ class IPtablesSettings(DeployComponentSettings):
         return self._data['allow']
 
 
+SETTINGS = IPtablesSettings()
+
+
 class IPtablesTasks(DeployTasks, SystemdTasksMixin):
-    SETTINGS = IPtablesSettings()
+    SETTINGS = IPtablesSettings
 
     @register
     async def list(self):
@@ -92,7 +96,7 @@ class IPtablesTasks(DeployTasks, SystemdTasksMixin):
                 context = {'deploy': task, 'components': all_components}
                 rendered.append(await template.render_async(context))
 
-        current_host = "\n".join([line.strip() for line in rendered if line])
+        current_host = "\n".join(line.strip() for line in rendered if line)
 
         for component_name in self.settings.allow:
             for task in all_components[component_name]:

@@ -28,6 +28,5 @@
     "files.insertFinalNewline": true,
     "git.ignoreLimitWarning": true,
     "restructuredtext.confPath": "${workspaceFolder}/docs/source",
-    "python.languageServer": "Microsoft",
     "restructuredtext.languageServer.disabled": true
 }
